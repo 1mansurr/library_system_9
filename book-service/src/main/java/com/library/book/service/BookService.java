@@ -49,9 +49,9 @@ public class BookService {
     @Transactional(readOnly = true)
     public PagedBooks listBooks(String title, String author, String category, boolean availableOnly, int page, int size) {
         Page<Book> result = bookRepository.search(
-                title == null || title.isBlank() ? null : title,
-                author == null || author.isBlank() ? null : author,
-                category == null || category.isBlank() ? null : category,
+                title == null || title.isBlank() ? "" : title,
+                author == null || author.isBlank() ? "" : author,
+                category == null || category.isBlank() ? "" : category,
                 availableOnly,
                 PageRequest.of(page, size)
         );

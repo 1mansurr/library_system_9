@@ -1,0 +1,805 @@
+{
+  "info": {
+    "name": "Library Management System - MVP",
+    "_postman_id": "library-mvp-v1",
+    "description": "End-to-end collection covering Lessons 1-9: register → login → catalog → borrow → return → overdue",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "user_service",    "value": "http://localhost:8081" },
+    { "key": "book_service",    "value": "http://localhost:8082" },
+    { "key": "loan_service",    "value": "http://localhost:8083" },
+    { "key": "service_token",   "value": "internal-service-token-for-loan-to-book" },
+    { "key": "run_id",          "value": "" },
+    { "key": "student_email",   "value": "" },
+    { "key": "student_token",   "value": "" },
+    { "key": "librarian_token", "value": "" },
+    { "key": "student_id",      "value": "" },
+    { "key": "book_id",         "value": "" },
+    { "key": "copy1_id",        "value": "" },
+    { "key": "copy2_id",        "value": "" },
+    { "key": "loan1_id",        "value": "" },
+    { "key": "loan2_id",        "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "if (!pm.collectionVariables.get('run_id')) {",
+          "  const id = Date.now().toString().slice(-6);",
+          "  pm.collectionVariables.set('run_id', id);",
+          "  pm.collectionVariables.set('student_email', 'student' + id + '@knust.edu.gh');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth - Register Student",
+      "item": [
+        {
+          "name": "POST /api/auth/register - new student",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const id = Date.now().toString().slice(-6);",
+                  "pm.collectionVariables.set('run_id', id);",
+                  "pm.collectionVariables.set('student_email', 'student' + id + '@knust.edu.gh');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has user_id', () => pm.expect(body.user_id).to.be.a('string'));",
+                  "pm.test('Has card_number starting LIB-', () => pm.expect(body.card_number).to.match(/^LIB-/));",
+                  "pm.test('Has email', () => pm.expect(body.email).to.be.a('string'));",
+                  "pm.collectionVariables.set('student_id', body.user_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{user_service}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"password123\",\n  \"full_name\": \"Test Student\",\n  \"member_type\": \"STUDENT\",\n  \"matric_no\": \"{{run_id}}01\",\n  \"phone\": \"+233501234000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/register - duplicate email → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{user_service}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"pw\",\n  \"full_name\": \"Dup\",\n  \"member_type\": \"STUDENT\",\n  \"matric_no\": \"{{run_id}}99\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/register - missing email → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{user_service}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"pw\",\n  \"full_name\": \"No Email\",\n  \"member_type\": \"STUDENT\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Auth - Login",
+      "item": [
+        {
+          "name": "POST /api/auth/login - student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has JWT token', () => pm.expect(body.token).to.be.a('string').and.not.empty);",
+                  "pm.test('Role is STUDENT', () => pm.expect(body.role).to.equal('STUDENT'));",
+                  "pm.collectionVariables.set('student_token', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{user_service}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/login - wrong password → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{user_service}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/login - librarian (seeded)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Role is LIBRARIAN', () => pm.expect(body.role).to.equal('LIBRARIAN'));",
+                  "pm.collectionVariables.set('librarian_token', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{user_service}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"librarian@library.com\",\n  \"password\": \"librarian123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /api/users/me - with token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has user_id', () => pm.expect(body.user_id).to.be.a('string'));",
+                  "pm.test('Status ACTIVE', () => pm.expect(body.status).to.equal('ACTIVE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{user_service}}/api/users/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "GET /api/users/me - no token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{user_service}}/api/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Users - Lookup and Admin",
+      "item": [
+        {
+          "name": "GET /api/users/{id} - any authenticated user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has required fields', () => {",
+                  "  pm.expect(body.user_id).to.be.a('string');",
+                  "  pm.expect(body.email).to.be.a('string');",
+                  "  pm.expect(body.status).to.equal('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{user_service}}/api/users/{{student_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "PATCH /api/users/{id}/status - librarian suspends student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is SUSPENDED', () => pm.expect(pm.response.json().status).to.equal('SUSPENDED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{user_service}}/api/users/{{student_id}}/status",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{librarian_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"SUSPENDED\"\n}" }
+          }
+        },
+        {
+          "name": "PATCH /api/users/{id}/status - non-librarian → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{user_service}}/api/users/{{student_id}}/status",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" }
+          }
+        },
+        {
+          "name": "PATCH /api/users/{id}/status - reactivate student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is ACTIVE', () => pm.expect(pm.response.json().status).to.equal('ACTIVE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{user_service}}/api/users/{{student_id}}/status",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{librarian_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Books - Catalog",
+      "item": [
+        {
+          "name": "POST /api/books - librarian adds book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has book_id', () => pm.expect(body.book_id).to.be.a('string'));",
+                  "pm.test('Title matches', () => pm.expect(body.title).to.equal('Clean Code'));",
+                  "pm.collectionVariables.set('book_id', body.book_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{book_service}}/api/books",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{librarian_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0-{{run_id}}-0001-1\",\n  \"title\": \"Clean Code\",\n  \"author\": \"Robert C. Martin\",\n  \"category\": \"Programming\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/books - non-librarian → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{book_service}}/api/books",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0-{{run_id}}-0002-2\",\n  \"title\": \"Denied\",\n  \"author\": \"X\",\n  \"category\": \"X\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/books/{id}/copies - add copy 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status AVAILABLE', () => pm.expect(body.status).to.equal('AVAILABLE'));",
+                  "pm.collectionVariables.set('copy1_id', body.copy_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{book_service}}/api/books/{{book_id}}/copies",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{librarian_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"barcode\": \"{{run_id}}-C1\",\n  \"location\": \"Shelf B1\"\n}" }
+          }
+        },
+        {
+          "name": "POST /api/books/{id}/copies - add copy 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('copy2_id', pm.response.json().copy_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{book_service}}/api/books/{{book_id}}/copies",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{librarian_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"barcode\": \"{{run_id}}-C2\",\n  \"location\": \"Shelf B2\"\n}" }
+          }
+        },
+        {
+          "name": "GET /api/books - list all books",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has content array', () => pm.expect(body.content).to.be.an('array'));",
+                  "pm.test('Has total field', () => pm.expect(body.total).to.be.a('number'));",
+                  "pm.test('At least one book', () => pm.expect(body.total).to.be.at.least(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{book_service}}/api/books",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "GET /api/books?available_only=true",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('All returned books have available copies', () => {",
+                  "  body.content.forEach(b => pm.expect(b.available_copies).to.be.at.least(1));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{book_service}}/api/books?available_only=true",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "GET /api/books/{id} - detail with copies",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has copies array', () => pm.expect(body.copies).to.be.an('array'));",
+                  "pm.test('Has 2 copies', () => pm.expect(body.copies.length).to.equal(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{book_service}}/api/books/{{book_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Copies - Ops and Service Token",
+      "item": [
+        {
+          "name": "GET /api/copies/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status AVAILABLE', () => pm.expect(pm.response.json().status).to.equal('AVAILABLE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{book_service}}/api/copies/{{copy1_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "PATCH /api/copies/{id}/status - librarian marks LOST",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is LOST', () => pm.expect(pm.response.json().status).to.equal('LOST'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{book_service}}/api/copies/{{copy1_id}}/status",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{librarian_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"LOST\"\n}" }
+          }
+        },
+        {
+          "name": "PATCH /api/copies/{id}/status - X-Service-Token (no JWT) → 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is AVAILABLE', () => pm.expect(pm.response.json().status).to.equal('AVAILABLE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{book_service}}/api/copies/{{copy1_id}}/status",
+            "header": [
+              { "key": "X-Service-Token", "value": "{{service_token}}" },
+              { "key": "Content-Type",    "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"AVAILABLE\"\n}" }
+          }
+        },
+        {
+          "name": "PATCH /api/copies/{id}/status - no auth → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{book_service}}/api/copies/{{copy1_id}}/status",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"AVAILABLE\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Loans - Borrow",
+      "item": [
+        {
+          "name": "POST /api/loans - student borrows copy 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has loan_id', () => pm.expect(body.loan_id).to.be.a('string'));",
+                  "pm.test('Status is BORROWED', () => pm.expect(body.status).to.equal('BORROWED'));",
+                  "pm.test('Has due_date', () => pm.expect(body.due_date).to.be.a('string'));",
+                  "pm.test('Not overdue', () => pm.expect(body.is_overdue).to.be.false);",
+                  "pm.collectionVariables.set('loan1_id', body.loan_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{loan_service}}/api/loans",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"copy_id\": \"{{copy1_id}}\"\n}" }
+          }
+        },
+        {
+          "name": "POST /api/loans - borrow already-LOANED copy → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{loan_service}}/api/loans",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"copy_id\": \"{{copy1_id}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Loans - Return and Fines",
+      "item": [
+        {
+          "name": "POST /api/loans/{id}/return - on-time (fine = 0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status RETURNED', () => pm.expect(body.status).to.equal('RETURNED'));",
+                  "pm.test('Fine is 0', () => pm.expect(parseFloat(body.fine_amount)).to.equal(0));",
+                  "pm.test('Has return_date', () => pm.expect(body.return_date).to.not.be.null);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{loan_service}}/api/loans/{{loan1_id}}/return",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "POST /api/loans/{id}/return - already returned → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{loan_service}}/api/loans/{{loan1_id}}/return",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "POST /api/loans - student borrows copy 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('loan2_id', pm.response.json().loan_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{loan_service}}/api/loans",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"copy_id\": \"{{copy2_id}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Loans - Queries",
+      "item": [
+        {
+          "name": "GET /api/loans/me - only caller's loans",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Is array', () => pm.expect(body).to.be.an('array'));",
+                  "pm.test('Has loans', () => pm.expect(body.length).to.be.at.least(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{loan_service}}/api/loans/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "GET /api/loans/{id} - owner can view",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has loan_id', () => pm.expect(pm.response.json().loan_id).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{loan_service}}/api/loans/{{loan1_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        },
+        {
+          "name": "GET /api/loans/overdue - librarian only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{loan_service}}/api/loans/overdue",
+            "header": [{ "key": "Authorization", "value": "Bearer {{librarian_token}}" }]
+          }
+        },
+        {
+          "name": "GET /api/loans/overdue - non-librarian → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{loan_service}}/api/loans/overdue",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }]
+          }
+        }
+      ]
+    }
+  ]
+}
