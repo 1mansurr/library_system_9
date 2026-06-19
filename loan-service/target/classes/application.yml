@@ -1,0 +1,39 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-hours: 24
+
+service:
+  token: ${SERVICE_TOKEN}
+
+services:
+  user-url: ${USER_SERVICE_URL:http://localhost:8081}
+  book-url: ${BOOK_SERVICE_URL:http://localhost:8082}
+
+loan:
+  period-days: ${LOAN_PERIOD_DAYS:14}
+  daily-rate: ${DAILY_RATE:0.50}
+  max-active-per-user: ${MAX_ACTIVE_LOANS_PER_USER:5}
+
+logging:
+  level:
+    com.library: INFO

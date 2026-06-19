@@ -1,0 +1,3 @@
+CREATE DATABASE users_db;
+CREATE DATABASE books_db;
+CREATE DATABASE loans_db;
