@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 15px;
+  line-height: 1.5;
+}
+::placeholder { color: #a8a092; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: #d8d0bf;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+:root {
+  --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+  /* Design tokens */
+  --bg: #f5f2ea;
+  --surface: #fffefb;
+  --surface-2: #faf7f0;
+  --border: #e8e2d5;
+  --border-strong: #dad2c1;
+  --text: #2a2620;
+  --muted: #766e60;
+  --faint: #9b9384;
+  --accent: #b0782a;
+  --accent-soft: #f6edda;
+  --accent-text: #7c531a;
+  --ok-bg: #e6f0e9;
+  --ok-fg: #2f6b48;
+  --bad-bg: #f6e7e3;
+  --bad-fg: #a83c2b;
+
+  /* Forest theme (default) */
+  --primary: #234739;
+  --primary-deep: #1a352b;
+  --primary-soft: #eaf0ec;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

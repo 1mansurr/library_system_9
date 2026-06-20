@@ -65,7 +65,8 @@ public class BookService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new NotFoundException("Book not found: " + bookId));
         List<CopyDetail> copies = bookCopyRepository.findByBook_BookId(bookId).stream()
-                .map(c -> new CopyDetail(c.getCopyId(), c.getBarcode(), c.getStatus(), c.getLocation()))
+                .map(c -> new CopyDetail(c.getCopyId(), c.getBarcode(), c.getStatus(), c.getLocation(),
+                        book.getBookId(), book.getTitle(), book.getAuthor()))
                 .toList();
         return new BookDetail(book.getBookId(), book.getIsbn(), book.getTitle(),
                 book.getAuthor(), book.getCategory(), copies);
@@ -83,14 +84,17 @@ public class BookService {
         copy.setStatus("AVAILABLE");
         bookCopyRepository.save(copy);
         log.info("Added copy {} for book {}", copy.getCopyId(), bookId);
-        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation());
+        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation(),
+                book.getBookId(), book.getTitle(), book.getAuthor());
     }
 
     @Transactional(readOnly = true)
     public CopyDetail getCopy(UUID copyId) {
         BookCopy copy = bookCopyRepository.findById(copyId)
                 .orElseThrow(() -> new NotFoundException("Copy not found: " + copyId));
-        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation());
+        Book book = copy.getBook();
+        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation(),
+                book.getBookId(), book.getTitle(), book.getAuthor());
     }
 
     @Transactional
@@ -100,7 +104,9 @@ public class BookService {
         copy.setStatus(request.status());
         bookCopyRepository.save(copy);
         log.info("Copy {} status updated to {}", copyId, request.status());
-        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation());
+        Book book = copy.getBook();
+        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation(),
+                book.getBookId(), book.getTitle(), book.getAuthor());
     }
 
     private BookSummary toSummary(Book book) {

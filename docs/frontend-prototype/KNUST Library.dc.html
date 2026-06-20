@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::placeholder{color:#a8a092}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#d8d0bf;border-radius:8px;border:3px solid transparent;background-clip:content-box}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+
+<div style="--bg:#f5f2ea;--ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;--serif:'Newsreader',Georgia,'Times New Roman',serif;--surface:#fffefb;--surface-2:#faf7f0;--border:#e8e2d5;--border-strong:#dad2c1;--text:#2a2620;--muted:#766e60;--faint:#9b9384;--accent:#b0782a;--accent-soft:#f6edda;--accent-text:#7c531a;--ok-bg:#e6f0e9;--ok-fg:#2f6b48;--bad-bg:#f6e7e3;--bad-fg:#a83c2b;--primary:{{ theme.primary }};--primary-deep:{{ theme.deep }};--primary-soft:{{ theme.soft }};min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--ui);font-size:15px;line-height:1.5;position:relative;">
+
+  <!-- ============ TOAST ============ -->
+  <sc-if value="{{ toast }}">
+    <div style="position:fixed;left:50%;bottom:30px;z-index:90;transform:translateX(-50%);animation:toastIn .28s cubic-bezier(.2,.8,.2,1);">
+      <div style="display:flex;align-items:center;gap:13px;background:var(--primary);color:#fff;padding:13px 20px 13px 16px;border-radius:12px;box-shadow:0 12px 30px -10px rgba(0,0,0,.35);max-width:380px;">
+        <span style="display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.16);flex:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </span>
+        <div>
+          <div style="font:600 14px var(--ui);">{{ toast.msg }}</div>
+          <sc-if value="{{ toast.sub }}"><div style="font:400 13px var(--ui);opacity:.78;margin-top:1px;">{{ toast.sub }}</div></sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ APP CHROME / NAV ============ -->
+  <sc-if value="{{ showChrome }}">
+    <header style="position:sticky;top:0;z-index:40;background:rgba(245,242,234,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);">
+      <div style="max-width:1120px;margin:0 auto;padding:0 24px;height:62px;display:flex;align-items:center;gap:22px;">
+        <div style="display:flex;align-items:center;gap:11px;flex:none;">
+          <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--primary);color:#fff;font:700 15px var(--serif);">K</span>
+          <span style="font:600 17px var(--serif);color:var(--text);">KNUST Library</span>
+        </div>
+        <nav style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;">
+          <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="4">
+            <button onClick="{{ item.onClick }}" style="{{ item.style }}">{{ item.label }}</button>
+          </sc-for>
+        </nav>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:14px;flex:none;">
+          <div style="text-align:right;line-height:1.25;">
+            <div style="font:600 13.5px var(--ui);color:var(--text);">{{ user.name }}</div>
+            <div style="font:400 13px var(--ui);color:var(--muted);">{{ user.role }}</div>
+          </div>
+          <span style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font:600 14px var(--ui);flex:none;">{{ user.initial }}</span>
+          <button onClick="{{ logout }}" title="Sign out" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:transparent;border:1px solid var(--border-strong);color:var(--muted);cursor:pointer;" style-hover="color:var(--bad-fg);border-color:var(--bad-fg);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+  </sc-if>
+
+  <!-- ============ 1. LOGIN ============ -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr;">
+      <!-- brand side -->
+      <div style="background:var(--primary);color:#fff;padding:56px 6vw;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;min-height:100vh;">
+        <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.07) 1px, transparent 0);background-size:22px 22px;"></div>
+        <div style="position:relative;display:flex;align-items:center;gap:12px;">
+          <span style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.12);font:700 19px var(--serif);">K</span>
+          <div style="font:500 14px var(--ui);opacity:.92;">University Library</div>
+        </div>
+        <div style="position:relative;max-width:440px;">
+          <div style="font:italic 400 16px var(--serif);color:var(--accent-soft);opacity:.85;margin-bottom:18px;">Kwame Nkrumah University of Science &amp; Technology</div>
+          <h1 style="font:600 40px/1.12 var(--serif);letter-spacing:-.01em;margin:0 0 18px;">Every title in the stacks, a click away.</h1>
+          <p style="font:400 18px/1.65 var(--serif);opacity:.82;margin:0;">Search the catalogue, borrow from any branch, and track your loans and fines — all from one quiet, well-kept place.</p>
+          <div style="margin-top:34px;display:flex;flex-direction:column;gap:14px;">
+            <sc-for list="{{ loginPoints }}" as="p" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;font:500 14.5px var(--ui);opacity:.92;">
+                <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.12);flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                {{ p.text }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:relative;font:italic 400 14px var(--serif);opacity:.6;">Kumasi · Ghana — open Mon–Sat, 8am to 9pm</div>
+      </div>
+      <!-- form side -->
+      <div style="background:var(--bg);padding:56px 6vw;display:flex;flex-direction:column;justify-content:center;min-height:100vh;">
+        <div style="width:100%;max-width:380px;margin:0 auto;">
+          <h2 style="font:600 28px var(--serif);letter-spacing:-.005em;margin:0 0 6px;">Welcome back</h2>
+          <p style="font:400 16px var(--serif);color:var(--muted);margin:0 0 30px;">Sign in to your library account.</p>
+          <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Email address</label>
+          <input value="{{ vals.loginEmail }}" onChange="{{ f.loginEmail }}" placeholder="ama.mensah@st.knust.edu.gh" style="width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;margin-bottom:18px;" style-focus="border-color:var(--primary)" />
+          <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Password</label>
+          <input value="{{ vals.loginPass }}" onChange="{{ f.loginPass }}" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;margin-bottom:22px;" style-focus="border-color:var(--primary)" />
+          <button onClick="{{ doLogin }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px;font:600 15px var(--ui);cursor:pointer;" style-hover="background:var(--primary-deep)">Sign in</button>
+          <div style="display:flex;align-items:center;gap:14px;margin:24px 0;color:var(--faint);font:500 12px var(--ui);"><span style="flex:1;height:1px;background:var(--border);"></span>or jump straight in<span style="flex:1;height:1px;background:var(--border);"></span></div>
+          <div style="display:flex;gap:10px;">
+            <button onClick="{{ enterMember }}" style="flex:1;background:#fff;border:1px solid var(--border-strong);border-radius:10px;padding:11px;font:600 13.5px var(--ui);color:var(--text);cursor:pointer;" style-hover="border-color:var(--primary);color:var(--primary)">Enter as Member</button>
+            <button onClick="{{ enterLibrarian }}" style="flex:1;background:#fff;border:1px solid var(--border-strong);border-radius:10px;padding:11px;font:600 13.5px var(--ui);color:var(--text);cursor:pointer;" style-hover="border-color:var(--primary);color:var(--primary)">Enter as Librarian</button>
+          </div>
+          <p style="text-align:center;font:400 14px var(--ui);color:var(--muted);margin:28px 0 0;">New here? <button onClick="{{ goRegister }}" style="background:none;border:none;color:var(--primary);font:600 14px var(--ui);cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;">Create an account</button></p>
+          <p style="text-align:center;margin:14px 0 0;"><button onClick="{{ goStyleGuide }}" style="background:none;border:none;color:var(--faint);font:500 12.5px var(--ui);cursor:pointer;">View the style guide →</button></p>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ 2. REGISTER ============ -->
+  <sc-if value="{{ isRegister }}">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 24px 80px;">
+      <div style="width:100%;max-width:520px;animation:fadeUp .4s ease;">
+        <button onClick="{{ goLogin }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font:500 13.5px var(--ui);cursor:pointer;padding:0;margin-bottom:26px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Back to sign in</button>
+        <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 6px;">Create your library account</h1>
+        <p style="font:400 16px var(--serif);color:var(--muted);margin:0 0 30px;">It takes a minute. Your library card number is issued on the spot.</p>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;">
+          <div style="display:grid;gap:18px;">
+            <div>
+              <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Full name</label>
+              <input value="{{ vals.regName }}" onChange="{{ f.regName }}" placeholder="e.g. Ama Mensah" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div>
+                <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Email</label>
+                <input value="{{ vals.regEmail }}" onChange="{{ f.regEmail }}" placeholder="you@st.knust.edu.gh" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+              </div>
+              <div>
+                <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Phone</label>
+                <input value="{{ vals.regPhone }}" onChange="{{ f.regPhone }}" placeholder="+233 ..." style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:9px;">Member type</label>
+              <div style="display:flex;gap:9px;">
+                <sc-for list="{{ regTypes }}" as="t" hint-placeholder-count="3">
+                  <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ showMatric }}">
+              <div>
+                <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Matriculation number</label>
+                <input value="{{ vals.regMatric }}" onChange="{{ f.regMatric }}" placeholder="e.g. 20512345" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+              </div>
+            </sc-if>
+            <sc-if value="{{ showStaff }}">
+              <div>
+                <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Staff ID</label>
+                <input value="{{ vals.regStaff }}" onChange="{{ f.regStaff }}" placeholder="e.g. KN-STF-0421" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+              </div>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div>
+                <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Password</label>
+                <input value="{{ vals.regPass }}" onChange="{{ f.regPass }}" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+              </div>
+              <div>
+                <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Confirm password</label>
+                <input value="{{ vals.regConfirm }}" onChange="{{ f.regConfirm }}" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+              </div>
+            </div>
+            <sc-if value="{{ reg.error }}">
+              <div style="background:var(--bad-bg);color:var(--bad-fg);font:500 13px var(--ui);padding:10px 13px;border-radius:9px;">{{ reg.error }}</div>
+            </sc-if>
+            <button onClick="{{ submitRegister }}" style="width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px;font:600 15px var(--ui);cursor:pointer;margin-top:4px;" style-hover="background:var(--primary-deep)">Create account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ 3. CATALOG ============ -->
+  <sc-if value="{{ isCatalog }}">
+    <main style="max-width:1120px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:26px;">
+        <div>
+          <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 5px;">Catalogue</h1>
+          <p style="font:400 15px var(--ui);color:var(--muted);margin:0;">{{ catalog.countText }}</p>
+        </div>
+        <div style="position:relative;width:min(340px,100%);">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--faint);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+          <input value="{{ vals.search }}" onChange="{{ f.search }}" placeholder="Search by title or author" style="width:100%;box-sizing:border-box;padding:11px 13px 11px 38px;border:1px solid var(--border-strong);border-radius:10px;font:400 14px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+        <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="6">
+          <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+        </sc-for>
+        <div style="width:1px;height:22px;background:var(--border);margin:0 4px;"></div>
+        <button onClick="{{ toggleAvailable }}" style="{{ availStyle }}">
+          <span style="{{ availDotStyle }}"></span>Available only
+        </button>
+      </div>
+      <sc-if value="{{ catalog.empty }}">
+        <div style="text-align:center;padding:70px 20px;color:var(--muted);font:400 16px var(--serif);">No books match those filters.</div>
+      </sc-if>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;">
+        <sc-for list="{{ catalog.books }}" as="bk" hint-placeholder-count="8">
+          <button onClick="{{ bk.onClick }}" style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;display:flex;flex-direction:column;gap:0;transition:border-color .15s,transform .15s;" style-hover="border-color:var(--primary);transform:translateY(-2px)">
+            <div style="font:400 13px var(--ui);color:var(--muted);margin-bottom:9px;">{{ bk.category }}</div>
+            <div style="font:600 19px/1.25 var(--serif);color:var(--text);margin-bottom:5px;min-height:46px;">{{ bk.title }}</div>
+            <div style="font:400 15px var(--serif);color:var(--muted);margin-bottom:18px;">{{ bk.author }}</div>
+            <div style="margin-top:auto;display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font:600 12px var(--ui);background:{{ bk.availBg }};color:{{ bk.availFg }};">{{ bk.availText }}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ 4. BOOK DETAIL ============ -->
+  <sc-if value="{{ isBook }}">
+    <main style="max-width:880px;margin:0 auto;padding:34px 24px 90px;animation:fadeUp .35s ease;">
+      <button onClick="{{ backToCatalog }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font:500 13.5px var(--ui);cursor:pointer;padding:0;margin-bottom:24px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Back to catalogue</button>
+      <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;margin-bottom:30px;">
+        <div style="width:120px;height:166px;flex:none;border-radius:10px;background:var(--primary-soft);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--primary);">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </div>
+        <div style="flex:1;min-width:240px;">
+          <div style="font:400 14px var(--ui);color:var(--muted);margin-bottom:12px;">{{ book.category }}</div>
+          <h1 style="font:600 34px/1.18 var(--serif);letter-spacing:-.01em;margin:0 0 8px;">{{ book.title }}</h1>
+          <div style="font:400 17px var(--serif);color:var(--muted);margin-bottom:18px;">by {{ book.author }}</div>
+          <div style="display:flex;gap:26px;flex-wrap:wrap;">
+            <div><div style="font:400 13px var(--ui);color:var(--faint);margin-bottom:3px;">ISBN</div><div style="font:500 14px var(--ui);color:var(--text);font-variant-numeric:tabular-nums;">{{ book.isbn }}</div></div>
+            <div><div style="font:400 13px var(--ui);color:var(--faint);margin-bottom:3px;">Copies</div><div style="font:500 14px var(--ui);color:var(--text);">{{ book.availText }}</div></div>
+          </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ book.reason }}">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--accent-soft);color:var(--accent-text);font:500 13.5px var(--ui);padding:12px 15px;border-radius:11px;margin-bottom:18px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          {{ book.reason }}
+        </div>
+      </sc-if>
+
+      <h3 style="font:600 18px var(--serif);color:var(--text);margin:0 0 14px;">Copies</h3>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <sc-for list="{{ book.copies }}" as="cp" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);">
+            <span style="display:inline-flex;align-items:center;padding:4px 11px;border-radius:7px;font:600 11.5px var(--ui);letter-spacing:.02em;background:{{ cp.badgeBg }};color:{{ cp.badgeFg }};flex:none;min-width:84px;justify-content:center;">{{ cp.badgeLabel }}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font:500 14px var(--ui);color:var(--text);font-variant-numeric:tabular-nums;">{{ cp.barcode }}</div>
+              <div style="font:400 12.5px var(--ui);color:var(--muted);margin-top:2px;">Shelf {{ cp.shelf }}</div>
+            </div>
+            <sc-if value="{{ cp.showBorrow }}">
+              <button onClick="{{ cp.onBorrow }}" style="{{ cp.btnStyle }}">{{ cp.btnLabel }}</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ 5. MY LOANS ============ -->
+  <sc-if value="{{ isLoans }}">
+    <main style="max-width:880px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 22px;">My loans</h1>
+      <div style="display:inline-flex;gap:3px;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:24px;">
+        <button onClick="{{ tabActive }}" style="{{ tabActiveStyle }}">Active <span style="opacity:.7;">{{ loans.activeCount }}</span></button>
+        <button onClick="{{ tabPast }}" style="{{ tabPastStyle }}">Past <span style="opacity:.7;">{{ loans.pastCount }}</span></button>
+      </div>
+
+      <sc-if value="{{ loans.showActive }}">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <sc-if value="{{ loans.activeEmpty }}"><div style="text-align:center;padding:60px 20px;color:var(--muted);font:400 16px var(--serif);">No active loans. Browse the catalogue to borrow a book.</div></sc-if>
+          <sc-for list="{{ loans.active }}" as="ln" hint-placeholder-count="2">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-left:3px solid {{ ln.edge }};">
+              <div style="flex:1;min-width:200px;">
+                <div style="font:600 18px var(--serif);color:var(--text);margin-bottom:3px;">{{ ln.title }}</div>
+                <div style="font:400 13px var(--ui);color:var(--muted);">{{ ln.author }}</div>
+                <div style="display:flex;gap:18px;margin-top:13px;flex-wrap:wrap;">
+                  <div><div style="font:400 12px var(--ui);color:var(--faint);">Borrowed</div><div style="font:500 13px var(--ui);color:var(--text);margin-top:2px;">{{ ln.borrowText }}</div></div>
+                  <div><div style="font:400 12px var(--ui);color:var(--faint);">Due</div><div style="font:500 13px var(--ui);color:var(--text);margin-top:2px;">{{ ln.dueText }}</div></div>
+                </div>
+              </div>
+              <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+                <div style="font:600 13.5px var(--ui);color:{{ ln.statusColor }};">{{ ln.statusText }}</div>
+                <sc-if value="{{ ln.overdue }}"><div style="font:500 12.5px var(--ui);color:var(--bad-fg);background:var(--bad-bg);padding:3px 9px;border-radius:7px;">Fine so far {{ ln.fineText }}</div></sc-if>
+                <button onClick="{{ ln.onReturn }}" style="background:var(--primary);color:#fff;border:none;border-radius:9px;padding:9px 18px;font:600 13.5px var(--ui);cursor:pointer;" style-hover="background:var(--primary-deep)">Return</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ loans.showPast }}">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+          <sc-if value="{{ loans.pastEmpty }}"><div style="text-align:center;padding:60px 20px;color:var(--muted);font:400 16px var(--serif);">No past loans yet.</div></sc-if>
+          <sc-for list="{{ loans.past }}" as="ln" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:16px;padding:17px 22px;border-bottom:1px solid var(--border);">
+              <div style="flex:1;min-width:0;">
+                <div style="font:600 15px var(--serif);color:var(--text);">{{ ln.title }}</div>
+                <div style="font:400 12.5px var(--ui);color:var(--muted);margin-top:2px;">Borrowed {{ ln.borrowText }} · Returned {{ ln.returnText }}</div>
+              </div>
+              <div style="font:500 12.5px var(--ui);color:var(--muted);">{{ ln.fineText }}</div>
+              <span style="display:inline-flex;align-items:center;padding:4px 11px;border-radius:7px;font:600 11.5px var(--ui);background:var(--ok-bg);color:var(--ok-fg);">Returned</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </main>
+  </sc-if>
+
+  <!-- ============ 6. PROFILE ============ -->
+  <sc-if value="{{ isProfile }}">
+    <main style="max-width:720px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 24px;">My profile</h1>
+      <div style="background:var(--primary);color:#fff;border-radius:16px;padding:26px 28px;position:relative;overflow:hidden;margin-bottom:26px;">
+        <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 0);background-size:20px 20px;"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font:italic 400 15px var(--serif);opacity:.7;margin-bottom:16px;">KNUST Library Card</div>
+            <div style="font:600 28px var(--serif);margin-bottom:6px;">{{ me.name }}</div>
+            <div style="font:500 13px var(--ui);opacity:.78;">{{ me.typeLine }}</div>
+          </div>
+          <span style="display:inline-flex;align-items:center;padding:5px 12px;border-radius:20px;font:600 12px var(--ui);background:{{ me.statusBg }};color:{{ me.statusFg }};">{{ me.statusLabel }}</span>
+        </div>
+        <div style="position:relative;margin-top:30px;font:600 22px var(--ui);letter-spacing:.16em;font-variant-numeric:tabular-nums;">{{ me.card }}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <sc-for list="{{ me.rows }}" as="r" hint-placeholder-count="5">
+          <div style="display:flex;justify-content:space-between;gap:16px;padding:15px 22px;border-bottom:1px solid var(--border);">
+            <span style="font:500 13.5px var(--ui);color:var(--muted);">{{ r.k }}</span>
+            <span style="font:500 13.5px var(--ui);color:var(--text);text-align:right;">{{ r.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ 7. LIBRARIAN DASHBOARD ============ -->
+  <sc-if value="{{ isDash }}">
+    <main style="max-width:1120px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 4px;">Library overview</h1>
+      <p style="font:400 15px var(--ui);color:var(--muted);margin:0 0 28px;">{{ dash.dateLine }}</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:30px;">
+        <sc-for list="{{ dash.stats }}" as="s" hint-placeholder-count="4">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;border-top:3px solid {{ s.edge }};">
+            <div style="font:600 34px var(--serif);color:var(--text);line-height:1;margin-bottom:8px;">{{ s.value }}</div>
+            <div style="font:500 13px var(--ui);color:var(--muted);">{{ s.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:start;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:17px 22px;border-bottom:1px solid var(--border);">
+            <h3 style="font:600 19px var(--serif);margin:0;">Needs attention</h3>
+            <button onClick="{{ goOverdue }}" style="background:none;border:none;color:var(--primary);font:600 13px var(--ui);cursor:pointer;">View all overdue →</button>
+          </div>
+          <sc-if value="{{ dash.noOverdue }}"><div style="padding:40px;text-align:center;color:var(--muted);font:400 14px var(--ui);">Nothing overdue. All clear.</div></sc-if>
+          <sc-for list="{{ dash.overdue }}" as="o" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 22px;border-bottom:1px solid var(--border);">
+              <div style="flex:1;min-width:0;">
+                <div style="font:600 14px var(--ui);color:var(--text);">{{ o.memberName }}</div>
+                <div style="font:400 12.5px var(--ui);color:var(--muted);">{{ o.title }}</div>
+              </div>
+              <div style="font:600 12.5px var(--ui);color:var(--bad-fg);background:var(--bad-bg);padding:3px 10px;border-radius:7px;">{{ o.daysText }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;">
+          <h3 style="font:600 19px var(--serif);margin:0 0 16px;">Quick actions</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button onClick="{{ goAddBook }}" style="display:flex;align-items:center;gap:11px;background:var(--primary);color:#fff;border:none;border-radius:11px;padding:14px 16px;font:600 14px var(--ui);cursor:pointer;text-align:left;" style-hover="background:var(--primary-deep)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add a new book
+            </button>
+            <button onClick="{{ goOverdue }}" style="display:flex;align-items:center;gap:11px;background:#fff;color:var(--text);border:1px solid var(--border-strong);border-radius:11px;padding:14px 16px;font:600 14px var(--ui);cursor:pointer;text-align:left;" style-hover="border-color:var(--primary);color:var(--primary)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Review overdue loans
+            </button>
+            <button onClick="{{ goMembers }}" style="display:flex;align-items:center;gap:11px;background:#fff;color:var(--text);border:1px solid var(--border-strong);border-radius:11px;padding:14px 16px;font:600 14px var(--ui);cursor:pointer;text-align:left;" style-hover="border-color:var(--primary);color:var(--primary)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+              Manage members
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ 8. ADD BOOK ============ -->
+  <sc-if value="{{ isAddBook }}">
+    <main style="max-width:560px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <button onClick="{{ goDash }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font:500 13.5px var(--ui);cursor:pointer;padding:0;margin-bottom:24px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Dashboard</button>
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:6px;">
+        <span style="font:600 12px var(--ui);color:#fff;background:var(--primary);width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">1</span>
+        <span style="font:500 12.5px var(--ui);color:var(--faint);">→</span>
+        <span style="font:600 12px var(--ui);color:var(--muted);background:var(--surface-2);border:1px solid var(--border);width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">2</span>
+        <span style="font:500 13px var(--ui);color:var(--muted);margin-left:4px;">Book details, then copies</span>
+      </div>
+      <h1 style="font:600 28px var(--serif);letter-spacing:-.005em;margin:10px 0 26px;">Add a new book</h1>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;display:grid;gap:18px;">
+        <div>
+          <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">ISBN</label>
+          <input value="{{ vals.addIsbn }}" onChange="{{ f.addIsbn }}" placeholder="978-..." style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;font-variant-numeric:tabular-nums;" style-focus="border-color:var(--primary)" />
+        </div>
+        <div>
+          <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Title</label>
+          <input value="{{ vals.addTitle }}" onChange="{{ f.addTitle }}" placeholder="Book title" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+        </div>
+        <div>
+          <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Author</label>
+          <input value="{{ vals.addAuthor }}" onChange="{{ f.addAuthor }}" placeholder="Author name" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+        </div>
+        <div>
+          <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Category</label>
+          <select value="{{ vals.addCategory }}" onChange="{{ f.addCategory }}" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;cursor:pointer;" style-focus="border-color:var(--primary)">
+            <sc-for list="{{ categories }}" as="c" hint-placeholder-count="5">
+              <option value="{{ c }}">{{ c }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <sc-if value="{{ addBook.error }}"><div style="background:var(--bad-bg);color:var(--bad-fg);font:500 13px var(--ui);padding:10px 13px;border-radius:9px;">{{ addBook.error }}</div></sc-if>
+        <button onClick="{{ submitAddBook }}" style="width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px;font:600 15px var(--ui);cursor:pointer;" style-hover="background:var(--primary-deep)">Save &amp; add copies →</button>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ 9. ADD COPY ============ -->
+  <sc-if value="{{ isAddCopy }}">
+    <main style="max-width:560px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:6px;">
+        <span style="font:600 12px var(--ui);color:#fff;background:var(--ok-fg);width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span style="font:500 12.5px var(--ui);color:var(--faint);">→</span>
+        <span style="font:600 12px var(--ui);color:#fff;background:var(--primary);width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">2</span>
+        <span style="font:500 13px var(--ui);color:var(--muted);margin-left:4px;">Now add copies</span>
+      </div>
+      <h1 style="font:600 28px var(--serif);letter-spacing:-.015em;margin:10px 0 4px;">{{ newBook.title }}</h1>
+      <p style="font:400 14px var(--ui);color:var(--muted);margin:0 0 24px;">{{ newBook.author }} · {{ newBook.category }}</p>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;display:grid;gap:18px;margin-bottom:22px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div>
+            <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Barcode</label>
+            <input value="{{ vals.copyBarcode }}" onChange="{{ f.copyBarcode }}" placeholder="KN-1042" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;font-variant-numeric:tabular-nums;" style-focus="border-color:var(--primary)" />
+          </div>
+          <div>
+            <label style="display:block;font:500 13px var(--ui);color:var(--muted);margin-bottom:7px;">Shelf location</label>
+            <input value="{{ vals.copyShelf }}" onChange="{{ f.copyShelf }}" placeholder="CSC 14-03" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 15px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onClick="{{ addCopy }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:#fff;color:var(--primary);border:1px solid var(--primary);border-radius:10px;padding:12px;font:600 14px var(--ui);cursor:pointer;" style-hover="background:var(--primary-soft)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add copy</button>
+          <button onClick="{{ finishCopies }}" style="flex:1;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:12px;font:600 14px var(--ui);cursor:pointer;" style-hover="background:var(--primary-deep)">Done</button>
+        </div>
+      </div>
+
+      <h3 style="font:600 18px var(--serif);color:var(--text);margin:0 0 14px;">Copies added ({{ newBook.copyCount }})</h3>
+      <sc-if value="{{ newBook.noCopies }}"><div style="background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:12px;padding:26px;text-align:center;color:var(--muted);font:400 13.5px var(--ui);">No copies yet — add at least one so the book can be borrowed.</div></sc-if>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <sc-for list="{{ newBook.copies }}" as="cp" hint-placeholder-count="1">
+          <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 18px;">
+            <span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:7px;font:600 11px var(--ui);background:var(--ok-bg);color:var(--ok-fg);">Available</span>
+            <div style="font:500 14px var(--ui);color:var(--text);font-variant-numeric:tabular-nums;">{{ cp.barcode }}</div>
+            <div style="margin-left:auto;font:400 12.5px var(--ui);color:var(--muted);">Shelf {{ cp.shelf }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ 10. OVERDUE ============ -->
+  <sc-if value="{{ isOverdue }}">
+    <main style="max-width:1000px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 5px;">Overdue loans</h1>
+      <p style="font:400 15px var(--ui);color:var(--muted);margin:0 0 24px;">{{ overdue.countText }}</p>
+      <sc-if value="{{ overdue.empty }}"><div style="text-align:center;padding:70px 20px;color:var(--muted);font:400 16px var(--serif);">Nothing overdue right now.</div></sc-if>
+      <sc-if value="{{ overdue.has }}">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1.4fr 1.6fr .8fr 1fr;gap:14px;padding:13px 22px;background:var(--surface-2);border-bottom:1px solid var(--border);font:600 12px var(--ui);letter-spacing:.02em;color:var(--faint);">
+            <div>Member</div><div>Book</div><div>Overdue</div><div style="text-align:right;">Action</div>
+          </div>
+          <sc-for list="{{ overdue.rows }}" as="o" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.4fr 1.6fr .8fr 1fr;gap:14px;padding:15px 22px;border-bottom:1px solid var(--border);align-items:center;">
+              <div>
+                <button onClick="{{ o.onOpen }}" style="background:none;border:none;padding:0;text-align:left;cursor:pointer;"><div style="font:600 14px var(--ui);color:var(--primary);text-decoration:underline;text-underline-offset:2px;">{{ o.memberName }}</div></button>
+                <div style="font:400 12px var(--ui);color:var(--muted);margin-top:2px;">{{ o.phone }}</div>
+              </div>
+              <div style="font:500 13.5px var(--ui);color:var(--text);">{{ o.title }}</div>
+              <div><span style="font:600 12.5px var(--ui);color:var(--bad-fg);background:var(--bad-bg);padding:3px 10px;border-radius:7px;">{{ o.daysText }}</span></div>
+              <div style="text-align:right;"><button onClick="{{ o.onNotify }}" style="background:#fff;color:var(--text);border:1px solid var(--border-strong);border-radius:8px;padding:7px 13px;font:600 12.5px var(--ui);cursor:pointer;" style-hover="border-color:var(--primary);color:var(--primary)">Notify</button></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </main>
+  </sc-if>
+
+  <!-- ============ 11. MEMBER MANAGEMENT ============ -->
+  <sc-if value="{{ isMembers }}">
+    <main style="max-width:1100px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 22px;">Members</h1>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:22px;align-items:start;">
+        <div>
+          <div style="position:relative;margin-bottom:14px;">
+            <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--faint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+            <input value="{{ vals.memberSearch }}" onChange="{{ f.memberSearch }}" placeholder="Search members by name" style="width:100%;box-sizing:border-box;padding:11px 13px 11px 38px;border:1px solid var(--border-strong);border-radius:10px;font:400 14px var(--ui);background:#fff;color:var(--text);outline:none;" style-focus="border-color:var(--primary)" />
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+            <sc-for list="{{ members.list }}" as="m" hint-placeholder-count="6">
+              <button onClick="{{ m.onClick }}" style="{{ m.rowStyle }}">
+                <span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font:600 13px var(--ui);flex:none;">{{ m.initial }}</span>
+                <div style="flex:1;min-width:0;text-align:left;">
+                  <div style="font:600 14px var(--ui);color:var(--text);">{{ m.name }}</div>
+                  <div style="font:400 12px var(--ui);color:var(--muted);">{{ m.sub }}</div>
+                </div>
+                <span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font:600 11px var(--ui);background:{{ m.statusBg }};color:{{ m.statusFg }};flex:none;">{{ m.statusLabel }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:sticky;top:80px;">
+          <sc-if value="{{ members.none }}"><div style="background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:14px;padding:50px 24px;text-align:center;color:var(--muted);font:400 14px var(--ui);">Select a member to view their record.</div></sc-if>
+          <sc-if value="{{ members.hasSelection }}">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;">
+              <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+                <span style="display:flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font:600 18px var(--serif);flex:none;">{{ sel.initial }}</span>
+                <div>
+                  <div style="font:600 19px var(--serif);color:var(--text);">{{ sel.name }}</div>
+                  <div style="font:400 13px var(--ui);color:var(--muted);">{{ sel.card }}</div>
+                </div>
+                <span style="margin-left:auto;display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font:600 12px var(--ui);background:{{ sel.statusBg }};color:{{ sel.statusFg }};">{{ sel.statusLabel }}</span>
+              </div>
+              <div style="display:grid;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:22px;">
+                <sc-for list="{{ sel.rows }}" as="r" hint-placeholder-count="5">
+                  <div style="display:flex;justify-content:space-between;gap:14px;padding:12px 16px;background:var(--surface);">
+                    <span style="font:500 12.5px var(--ui);color:var(--muted);">{{ r.k }}</span>
+                    <span style="font:500 12.5px var(--ui);color:var(--text);text-align:right;">{{ r.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ sel.onToggle }}" style="{{ sel.btnStyle }}">{{ sel.btnLabel }}</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ============ STYLE GUIDE ============ -->
+  <sc-if value="{{ isStyleGuide }}">
+    <main style="max-width:920px;margin:0 auto;padding:40px 24px 90px;animation:fadeUp .35s ease;">
+      <button onClick="{{ goLogin }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font:500 13.5px var(--ui);cursor:pointer;padding:0;margin-bottom:24px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Back to sign in</button>
+      <h1 style="font:600 38px var(--serif);letter-spacing:-.01em;line-height:1.13;margin:0 0 6px;">Style guide</h1>
+      <p style="font:400 16px var(--serif);color:var(--muted);margin:0 0 36px;">The system behind the KNUST Library prototype.</p>
+
+      <h2 style="font:600 18px var(--serif);color:var(--text);margin:0 0 16px;">Colour</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:44px;">
+        <sc-for list="{{ guideColors }}" as="c" hint-placeholder-count="8">
+          <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface);">
+            <div style="height:64px;background:{{ c.value }};border-bottom:1px solid var(--border);"></div>
+            <div style="padding:10px 12px;"><div style="font:600 12.5px var(--ui);color:var(--text);">{{ c.name }}</div><div style="font:400 11px var(--ui);color:var(--muted);font-variant-numeric:tabular-nums;">{{ c.hex }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <h2 style="font:600 18px var(--serif);color:var(--text);margin:0 0 16px;">Typography</h2>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;margin-bottom:44px;display:flex;flex-direction:column;gap:22px;">
+        <div style="display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:baseline;"><div style="font:400 12px var(--ui);color:var(--faint);line-height:1.5;">Display<br>Newsreader 600 · 38px</div><div style="font:600 38px var(--serif);letter-spacing:-.01em;">Every title in the stacks</div></div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:baseline;"><div style="font:400 12px var(--ui);color:var(--faint);line-height:1.5;">Heading<br>Newsreader 600 · 26px</div><div style="font:600 26px var(--serif);">A History of Ghana</div></div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:baseline;"><div style="font:400 12px var(--ui);color:var(--faint);line-height:1.5;">Body<br>Newsreader 400 · 17px</div><div style="font:400 17px var(--serif);color:var(--text);line-height:1.6;">Search the catalogue, borrow from any branch, and keep track of every loan and fine in one quiet, well-kept place.</div></div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:baseline;"><div style="font:400 12px var(--ui);color:var(--faint);line-height:1.5;">UI<br>System 500 · 15px</div><div style="font:500 15px var(--ui);color:var(--text);">Search · Borrow · Return · Filter results</div></div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:baseline;"><div style="font:400 12px var(--ui);color:var(--faint);line-height:1.5;">Small<br>System 400 · 13px</div><div style="font:400 13px var(--ui);color:var(--muted);font-variant-numeric:tabular-nums;">ISBN 978-0262033848 · Shelf CSC 12-01</div></div>
+      </div>
+
+      <h2 style="font:600 18px var(--serif);color:var(--text);margin:0 0 16px;">Components</h2>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:26px;">
+        <div>
+          <div style="font:600 12px var(--ui);color:var(--muted);margin-bottom:12px;">Buttons</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <button style="background:var(--primary);color:#fff;border:none;border-radius:9px;padding:11px 18px;font:600 14px var(--ui);cursor:pointer;">Primary</button>
+            <button style="background:#fff;color:var(--text);border:1px solid var(--border-strong);border-radius:9px;padding:11px 18px;font:600 14px var(--ui);cursor:pointer;">Secondary</button>
+            <button style="background:none;color:var(--primary);border:none;font:600 14px var(--ui);cursor:pointer;">Text link →</button>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;">
+          <div style="font:600 12px var(--ui);color:var(--muted);margin-bottom:12px;">Input</div>
+          <input placeholder="Search by title or author" style="width:100%;max-width:340px;box-sizing:border-box;padding:11px 13px;border:1px solid var(--border-strong);border-radius:10px;font:400 14px var(--ui);background:#fff;outline:none;" style-focus="border-color:var(--primary)" />
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;">
+          <div style="font:600 12px var(--ui);color:var(--muted);margin-bottom:12px;">Badges</div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap;">
+            <span style="padding:4px 11px;border-radius:7px;font:600 11.5px var(--ui);background:var(--ok-bg);color:var(--ok-fg);">Available</span>
+            <span style="padding:4px 11px;border-radius:7px;font:600 11.5px var(--ui);background:var(--accent-soft);color:var(--accent-text);">Loaned</span>
+            <span style="padding:4px 11px;border-radius:7px;font:600 11.5px var(--ui);background:var(--bad-bg);color:var(--bad-fg);">Lost</span>
+            <span style="padding:4px 11px;border-radius:20px;font:600 11.5px var(--ui);background:var(--ok-bg);color:var(--ok-fg);">Active</span>
+            <span style="padding:4px 11px;border-radius:20px;font:600 11.5px var(--ui);background:var(--bad-bg);color:var(--bad-fg);">Suspended</span>
+            <span style="padding:4px 11px;border-radius:7px;font:600 11.5px var(--ui);background:var(--bad-bg);color:var(--bad-fg);">Overdue</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;">
+          <div style="font:600 12px var(--ui);color:var(--muted);margin-bottom:12px;">Book card</div>
+          <div style="width:250px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;">
+            <div style="font:400 13px var(--ui);color:var(--muted);margin-bottom:9px;">Sciences</div>
+            <div style="font:600 19px var(--serif);margin-bottom:5px;">University Physics</div>
+            <div style="font:400 15px var(--serif);color:var(--muted);margin-bottom:18px;">Young &amp; Freedman</div>
+            <span style="display:inline-flex;padding:4px 10px;border-radius:20px;font:600 12px var(--ui);background:var(--ok-bg);color:var(--ok-fg);">2 / 3 available</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:22px;">
+          <div style="font:600 12px var(--ui);color:var(--muted);margin-bottom:12px;">Table row</div>
+          <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:1.4fr 1.6fr .8fr;gap:14px;padding:13px 18px;background:var(--surface-2);font:600 12px var(--ui);letter-spacing:.02em;color:var(--faint);"><div>Member</div><div>Book</div><div>Overdue</div></div>
+            <div style="display:grid;grid-template-columns:1.4fr 1.6fr .8fr;gap:14px;padding:14px 18px;align-items:center;"><div style="font:600 14px var(--ui);color:var(--primary);">Kwame Boateng</div><div style="font:500 13.5px var(--ui);">A History of Ghana</div><div><span style="font:600 12.5px var(--ui);color:var(--bad-fg);background:var(--bad-bg);padding:3px 10px;border-radius:7px;">12 days</span></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;forest&quot;,&quot;navy&quot;],&quot;default&quot;:&quot;forest&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;loanLimit&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;},&quot;finePerDay&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:0.5,&quot;min&quot;:0,&quot;max&quot;:5,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  now = new Date();
+  state = {
+    screen: 'login', role: null, currentId: null,
+    books: this.seedBooks(),
+    members: this.seedMembers(),
+    loans: [],
+    toast: null,
+    login: { email: '', password: '' },
+    reg: { fullName: '', email: '', phone: '', type: 'Student', matric: '', staff: '', password: '', confirm: '', error: '' },
+    search: '', category: 'All', availableOnly: false,
+    bookId: null, loansTab: 'active',
+    addBook: { isbn: '', title: '', author: '', category: 'Computer Science', error: '' },
+    newBookId: null,
+    addCopy: { barcode: '', shelf: '' },
+    memberSearch: '', selMemberId: null,
+  };
+
+  componentDidMount() { this.seedLoans(); }
+
+  // ---------- seed ----------
+  seedBooks() {
+    let bc = 1000;
+    const sp = { 'Computer Science': 'CSC', 'Engineering': 'ENG', 'Sciences': 'SCI', 'Business': 'BUS', 'Humanities': 'HUM' };
+    const mk = (cat, st, aisle) => st.map((s, i) => ({ barcode: 'KN-' + (bc++), status: s, shelf: sp[cat] + ' ' + aisle + '-' + String(i + 1).padStart(2, '0') }));
+    const B = (id, title, author, isbn, cat, st, aisle) => ({ id, title, author, isbn, category: cat, copies: mk(cat, st, aisle) });
+    return [
+      B('b1', 'Introduction to Algorithms', 'Cormen, Leiserson, Rivest & Stein', '978-0262033848', 'Computer Science', ['LOANED', 'AVAILABLE', 'AVAILABLE'], 12),
+      B('b2', 'Operating System Concepts', 'Abraham Silberschatz', '978-1118063330', 'Computer Science', ['LOANED', 'LOANED'], 12),
+      B('b3', 'Clean Code', 'Robert C. Martin', '978-0132350884', 'Computer Science', ['LOANED', 'AVAILABLE'], 13),
+      B('b4', 'Fundamentals of Engineering Thermodynamics', 'Michael J. Moran', '978-1118412930', 'Engineering', ['AVAILABLE', 'AVAILABLE', 'AVAILABLE'], 4),
+      B('b5', 'Engineering Mechanics: Dynamics', 'Russell C. Hibbeler', '978-0133915389', 'Engineering', ['LOANED', 'AVAILABLE'], 4),
+      B('b6', 'Materials Science and Engineering', 'William D. Callister', '978-1118324578', 'Engineering', ['AVAILABLE', 'LOST'], 5),
+      B('b7', 'Organic Chemistry', 'Jonathan Clayden', '978-0199270293', 'Sciences', ['LOANED', 'AVAILABLE'], 7),
+      B('b8', 'University Physics', 'Young & Freedman', '978-0321973610', 'Sciences', ['LOANED', 'AVAILABLE', 'AVAILABLE'], 7),
+      B('b9', 'Molecular Biology of the Cell', 'Bruce Alberts', '978-0815344322', 'Sciences', ['AVAILABLE'], 8),
+      B('b10', 'Principles of Economics', 'N. Gregory Mankiw', '978-1305585126', 'Business', ['LOANED', 'LOANED', 'AVAILABLE'], 2),
+      B('b11', 'Financial Accounting', 'Jerry J. Weygandt', '978-1119493624', 'Business', ['AVAILABLE', 'AVAILABLE'], 2),
+      B('b12', 'Marketing Management', 'Philip Kotler', '978-0133856460', 'Business', ['LOANED', 'AVAILABLE'], 3),
+      B('b13', 'Things Fall Apart', 'Chinua Achebe', '978-0385474542', 'Humanities', ['AVAILABLE', 'AVAILABLE', 'AVAILABLE', 'AVAILABLE'], 9),
+      B('b14', 'A History of Ghana', 'W. E. F. Ward', '978-0049660045', 'Humanities', ['LOANED', 'AVAILABLE'], 9),
+      B('b15', 'The Wretched of the Earth', 'Frantz Fanon', '978-0802141323', 'Humanities', ['AVAILABLE', 'LOST'], 10),
+    ];
+  }
+
+  seedMembers() {
+    return [
+      { id: 'm1', name: 'Ama Mensah', type: 'Student', matric: '20512345', staff: '', status: 'ACTIVE', card: 'KN-LIB-204517', email: 'ama.mensah@st.knust.edu.gh', phone: '+233 24 555 0112', joined: 'Sep 2023' },
+      { id: 'm2', name: 'Kwame Boateng', type: 'Student', matric: '20498822', staff: '', status: 'ACTIVE', card: 'KN-LIB-198003', email: 'kwame.boateng@st.knust.edu.gh', phone: '+233 20 411 7788', joined: 'Sep 2022' },
+      { id: 'm3', name: 'Efua Sarpong', type: 'Staff', matric: '', staff: 'KN-STF-0421', status: 'ACTIVE', card: 'KN-LIB-150221', email: 'e.sarpong@knust.edu.gh', phone: '+233 24 990 2211', joined: 'Jan 2019' },
+      { id: 'm4', name: 'Yaw Owusu', type: 'Student', matric: '20533417', staff: '', status: 'SUSPENDED', card: 'KN-LIB-205590', email: 'yaw.owusu@st.knust.edu.gh', phone: '+233 27 332 0099', joined: 'Sep 2023' },
+      { id: 'm5', name: 'Akosua Frimpong', type: 'External', matric: '', staff: '', status: 'ACTIVE', card: 'KN-LIB-300118', email: 'akosua.f@gmail.com', phone: '+233 55 120 4567', joined: 'Mar 2024' },
+      { id: 'm6', name: 'Kojo Antwi', type: 'Student', matric: '20519960', staff: '', status: 'ACTIVE', card: 'KN-LIB-201144', email: 'kojo.antwi@st.knust.edu.gh', phone: '+233 24 778 1200', joined: 'Sep 2023' },
+      { id: 'm7', name: 'Adwoa Asante', type: 'Staff', matric: '', staff: 'KN-STF-0388', status: 'ACTIVE', card: 'KN-LIB-150188', email: 'a.asante@knust.edu.gh', phone: '+233 20 665 4321', joined: 'Aug 2017' },
+    ];
+  }
+
+  seedLoans() {
+    const d = (n) => new Date(this.now.getTime() + n * 86400000);
+    const findCopy = (bid) => { const b = this.state.books.find(x => x.id === bid); return b.copies.find(c => c.status === 'LOANED'); };
+    const mk = (bid, mid, bo, du) => { const c = findCopy(bid); return { id: 'L' + bid + mid, bookId: bid, copyId: c ? c.barcode : '', memberId: mid, borrow: d(bo), due: d(du), status: 'BORROWED', return: null }; };
+    const loans = [
+      mk('b8', 'm1', -10, 4),
+      mk('b3', 'm1', -20, -6),
+      mk('b14', 'm2', -26, -12),
+      mk('b7', 'm4', -39, -25),
+      { id: 'Lp1', bookId: 'b13', copyId: 'KN-RET1', memberId: 'm1', borrow: d(-60), due: d(-46), status: 'RETURNED', return: d(-50) },
+      { id: 'Lp2', bookId: 'b1', copyId: 'KN-RET2', memberId: 'm1', borrow: d(-40), due: d(-26), status: 'RETURNED', return: d(-20) },
+    ];
+    this.setState({ loans });
+  }
+
+  // ---------- helpers ----------
+  finePerDay() { return this.props.finePerDay != null ? this.props.finePerDay : 0.5; }
+  loanLimit() { return this.props.loanLimit != null ? this.props.loanLimit : 3; }
+  money(n) { return 'GH\u20B5 ' + Number(n).toFixed(2); }
+  fmt(d) { const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return d.getDate() + ' ' + m[d.getMonth()] + ' ' + d.getFullYear(); }
+  daysTo(d) { return Math.round((d.getTime() - this.now.getTime()) / 86400000); }
+  badge(s) {
+    const map = {
+      AVAILABLE: { bg: 'var(--ok-bg)', fg: 'var(--ok-fg)', label: 'Available' },
+      LOANED: { bg: 'var(--accent-soft)', fg: 'var(--accent-text)', label: 'Loaned' },
+      LOST: { bg: 'var(--bad-bg)', fg: 'var(--bad-fg)', label: 'Lost' },
+      ACTIVE: { bg: 'var(--ok-bg)', fg: 'var(--ok-fg)', label: 'Active' },
+      SUSPENDED: { bg: 'var(--bad-bg)', fg: 'var(--bad-fg)', label: 'Suspended' },
+    };
+    return map[s] || map.AVAILABLE;
+  }
+  avail(b) { const total = b.copies.length; const a = b.copies.filter(c => c.status === 'AVAILABLE').length; return { a, total }; }
+  cur() { return this.state.members.find(m => m.id === this.state.currentId) || null; }
+  myActive() { return this.state.loans.filter(l => l.memberId === this.state.currentId && l.status === 'BORROWED'); }
+  toast(msg, sub) { this.setState({ toast: { msg, sub } }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 3400); }
+
+  // ---------- nav / auth ----------
+  go(screen) { this.setState({ screen }); window.scrollTo(0, 0); }
+  enterMember() { this.setState({ role: 'member', currentId: 'm1', screen: 'catalog' }); window.scrollTo(0, 0); }
+  enterLibrarian() { this.setState({ role: 'librarian', currentId: null, screen: 'dashboard' }); window.scrollTo(0, 0); }
+  doLogin() { this.enterMember(); }
+  logout() { this.setState({ role: null, currentId: null, screen: 'login', bookId: null, selMemberId: null }); window.scrollTo(0, 0); }
+
+  setIn(group, key, v) { this.state[group][key] = v; this.forceUpdate(); }
+  setTop(key, v) { this.state[key] = v; this.forceUpdate(); }
+
+  // ---------- register ----------
+  submitRegister() {
+    const r = this.state.reg;
+    if (!r.fullName.trim() || !r.email.trim() || !r.password) { r.error = 'Please complete all required fields.'; this.forceUpdate(); return; }
+    if (r.type === 'Student' && !r.matric.trim()) { r.error = 'Students must provide a matriculation number.'; this.forceUpdate(); return; }
+    if (r.type === 'Staff' && !r.staff.trim()) { r.error = 'Staff must provide a staff ID.'; this.forceUpdate(); return; }
+    if (r.password !== r.confirm) { r.error = 'Passwords do not match.'; this.forceUpdate(); return; }
+    const id = 'm' + Date.now();
+    const card = 'KN-LIB-' + (200000 + Math.floor(Math.random() * 99999));
+    const mem = { id, name: r.fullName.trim(), type: r.type, matric: r.type === 'Student' ? r.matric : '', staff: r.type === 'Staff' ? r.staff : '', status: 'ACTIVE', card, email: r.email, phone: r.phone, joined: 'Jun 2026' };
+    this.state.members.push(mem);
+    r.error = '';
+    this.setState({ role: 'member', currentId: id, screen: 'catalog' });
+    this.toast('Welcome to the library, ' + r.fullName.trim().split(' ')[0] + '.', 'Your card number is ' + card);
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- catalog / borrow ----------
+  openBook(id) { this.setState({ bookId: id, screen: 'book' }); window.scrollTo(0, 0); }
+  borrow(copyId) {
+    const cur = this.cur();
+    if (!cur || cur.status === 'SUSPENDED' || this.myActive().length >= this.loanLimit()) return;
+    const book = this.state.books.find(b => b.id === this.state.bookId);
+    const copy = book.copies.find(c => c.barcode === copyId);
+    if (!copy || copy.status !== 'AVAILABLE') return;
+    copy.status = 'LOANED';
+    this.state.loans.push({ id: 'L' + Date.now(), bookId: book.id, copyId, memberId: cur.id, borrow: new Date(this.now), due: new Date(this.now.getTime() + 14 * 86400000), status: 'BORROWED', return: null });
+    this.setState({ screen: 'loans', loansTab: 'active' });
+    this.toast('Borrowed: ' + book.title, 'Due ' + this.fmt(new Date(this.now.getTime() + 14 * 86400000)));
+    window.scrollTo(0, 0);
+  }
+  returnLoan(id) {
+    const loan = this.state.loans.find(l => l.id === id);
+    if (!loan) return;
+    const over = Math.max(0, -this.daysTo(loan.due));
+    const fine = over * this.finePerDay();
+    loan.status = 'RETURNED'; loan.return = new Date(this.now); loan.fine = fine;
+    const book = this.state.books.find(b => b.id === loan.bookId);
+    if (book) { const c = book.copies.find(x => x.barcode === loan.copyId); if (c) c.status = 'AVAILABLE'; }
+    this.forceUpdate();
+    this.toast(fine > 0 ? 'Returned — fine of ' + this.money(fine) : 'Returned. No fine, thank you!', book ? book.title : '');
+  }
+
+  // ---------- librarian ----------
+  submitAddBook() {
+    const a = this.state.addBook;
+    if (!a.isbn.trim() || !a.title.trim() || !a.author.trim()) { a.error = 'ISBN, title and author are required.'; this.forceUpdate(); return; }
+    const id = 'b' + Date.now();
+    this.state.books.push({ id, title: a.title.trim(), author: a.author.trim(), isbn: a.isbn.trim(), category: a.category, copies: [] });
+    a.error = '';
+    this.setState({ newBookId: id, screen: 'addCopy', addBook: { isbn: '', title: '', author: '', category: 'Computer Science', error: '' } });
+    this.toast('Book saved.', 'Now add at least one copy.');
+    window.scrollTo(0, 0);
+  }
+  addCopy() {
+    const c = this.state.addCopy;
+    if (!c.barcode.trim()) { this.toast('Enter a barcode for the copy.'); return; }
+    const book = this.state.books.find(b => b.id === this.state.newBookId);
+    book.copies.push({ barcode: c.barcode.trim(), status: 'AVAILABLE', shelf: c.shelf.trim() || (book.category.slice(0, 3).toUpperCase() + ' 00-00') });
+    this.setState({ addCopy: { barcode: '', shelf: '' } });
+    this.toast('Copy added.', c.barcode.trim());
+  }
+  finishCopies() { this.setState({ screen: 'catalog', search: '', category: 'All', availableOnly: false }); this.toast('Catalogue updated.'); window.scrollTo(0, 0); }
+
+  openMemberFromOverdue(mid) { this.setState({ selMemberId: mid, screen: 'members', memberSearch: '' }); window.scrollTo(0, 0); }
+  notify(name) { this.toast('Reminder sent to ' + name + '.', 'Overdue notice delivered by SMS & email.'); }
+  selectMember(id) { this.setState({ selMemberId: id }); }
+  toggleStatus(id) {
+    const m = this.state.members.find(x => x.id === id);
+    m.status = m.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    this.forceUpdate();
+    this.toast(m.name + ' is now ' + m.status.toLowerCase() + '.');
+  }
+
+  // ---------- render ----------
+  renderVals() {
+    const s = this.state;
+    const navy = this.props.theme === 'navy';
+    const theme = navy
+      ? { primary: '#21364e', deep: '#18293b', soft: '#eceff4' }
+      : { primary: '#234739', deep: '#1a352b', soft: '#eaf0ec' };
+    const isMember = s.role === 'member';
+    const isLib = s.role === 'librarian';
+    const cur = this.cur();
+    const activeKey = s.screen === 'book' ? 'catalog' : s.screen;
+    const showChrome = s.role && ['catalog', 'book', 'loans', 'profile', 'dashboard', 'addBook', 'addCopy', 'overdue', 'members'].includes(s.screen);
+
+    // nav
+    const navStyle = (active) => active
+      ? 'background:var(--primary-soft);color:var(--primary);border:none;border-radius:9px;padding:8px 14px;font:600 14px var(--ui);cursor:pointer;'
+      : 'background:transparent;color:var(--muted);border:none;border-radius:9px;padding:8px 14px;font:500 14px var(--ui);cursor:pointer;';
+    const def = isLib
+      ? [['dashboard', 'Dashboard'], ['catalog', 'Catalogue'], ['overdue', 'Overdue'], ['members', 'Members']]
+      : [['catalog', 'Catalogue'], ['loans', 'My Loans'], ['profile', 'Profile']];
+    const navItems = def.map(([key, label]) => ({ key, label, style: navStyle(activeKey === key), onClick: () => this.go(key) }));
+
+    // user chip
+    const uname = isLib ? 'Daniel Osei' : (cur ? cur.name : '');
+    const user = { name: uname, role: isLib ? 'Head Librarian' : (cur ? cur.type + ' member' : ''), initial: (uname[0] || 'U').toUpperCase() };
+
+    // login
+    const loginPoints = [{ text: 'Browse 15,000+ titles across every faculty' }, { text: 'Borrow up to ' + this.loanLimit() + ' books at a time' }, { text: 'Track due dates and fines in real time' }];
+
+    // catalog
+    const cats = ['Computer Science', 'Engineering', 'Sciences', 'Business', 'Humanities'];
+    const chipCats = ['All', ...cats];
+    const chipStyle = (active) => active
+      ? 'background:var(--primary);color:#fff;border:1px solid var(--primary);border-radius:20px;padding:7px 15px;font:600 13px var(--ui);cursor:pointer;'
+      : 'background:#fff;color:var(--muted);border:1px solid var(--border-strong);border-radius:20px;padding:7px 15px;font:500 13px var(--ui);cursor:pointer;';
+    const catChips = chipCats.map(c => ({ label: c, style: chipStyle(s.category === c), onClick: () => this.setState({ category: c }) }));
+    const q = s.search.trim().toLowerCase();
+    let filtered = s.books.filter(b => {
+      if (s.category !== 'All' && b.category !== s.category) return false;
+      if (q && !(b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q))) return false;
+      if (s.availableOnly && this.avail(b).a === 0) return false;
+      return true;
+    });
+    const catBooks = filtered.map(b => {
+      const { a, total } = this.avail(b);
+      return { id: b.id, title: b.title, author: b.author, category: b.category, availText: a + ' / ' + total + ' available', availBg: a === 0 ? 'var(--bad-bg)' : 'var(--ok-bg)', availFg: a === 0 ? 'var(--bad-fg)' : 'var(--ok-fg)', onClick: () => this.openBook(b.id) };
+    });
+    const availStyle = s.availableOnly
+      ? 'display:inline-flex;align-items:center;gap:8px;background:var(--primary-soft);color:var(--primary);border:1px solid var(--primary);border-radius:20px;padding:7px 14px;font:600 13px var(--ui);cursor:pointer;'
+      : 'display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--muted);border:1px solid var(--border-strong);border-radius:20px;padding:7px 14px;font:500 13px var(--ui);cursor:pointer;';
+    const availDotStyle = 'width:9px;height:9px;border-radius:50%;background:' + (s.availableOnly ? 'var(--primary)' : 'var(--faint)') + ';';
+    const catalog = { countText: filtered.length + ' of ' + s.books.length + ' titles', books: catBooks, empty: filtered.length === 0 };
+
+    // book detail
+    let book = null;
+    if (s.bookId) {
+      const b = s.books.find(x => x.id === s.bookId);
+      if (b) {
+        const { a, total } = this.avail(b);
+        const suspended = cur && cur.status === 'SUSPENDED';
+        const atLimit = this.myActive().length >= this.loanLimit();
+        let reason = '';
+        if (isMember) {
+          if (suspended) reason = 'Your account is suspended. Please clear outstanding fines at the front desk.';
+          else if (atLimit) reason = 'You have reached the ' + this.loanLimit() + '-book loan limit. Return a book to borrow another.';
+        }
+        const canBorrow = isMember && !suspended && !atLimit;
+        const copies = b.copies.map(c => {
+          const bd = this.badge(c.status);
+          const enabled = canBorrow && c.status === 'AVAILABLE';
+          return {
+            barcode: c.barcode, shelf: c.shelf, badgeLabel: bd.label, badgeBg: bd.bg, badgeFg: bd.fg,
+            showBorrow: c.status === 'AVAILABLE' && isMember,
+            btnLabel: enabled ? 'Borrow' : 'Unavailable',
+            btnStyle: enabled
+              ? 'background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font:600 13px var(--ui);cursor:pointer;flex:none;'
+              : 'background:var(--surface-2);color:var(--faint);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font:600 13px var(--ui);cursor:not-allowed;flex:none;',
+            onBorrow: enabled ? () => this.borrow(c.barcode) : () => { },
+          };
+        });
+        book = { title: b.title, author: b.author, isbn: b.isbn, category: b.category, availText: a + ' of ' + total + ' available', reason, copies };
+      }
+    }
+
+    // my loans
+    const mine = s.loans.filter(l => l.memberId === s.currentId);
+    const activeLoans = mine.filter(l => l.status === 'BORROWED').map(l => {
+      const b = s.books.find(x => x.id === l.bookId);
+      const dleft = this.daysTo(l.due);
+      const overdue = dleft < 0;
+      const over = Math.abs(dleft);
+      let statusText, statusColor;
+      if (overdue) { statusText = over + (over === 1 ? ' day overdue' : ' days overdue'); statusColor = 'var(--bad-fg)'; }
+      else if (dleft === 0) { statusText = 'Due today'; statusColor = 'var(--accent-text)'; }
+      else if (dleft === 1) { statusText = 'Due tomorrow'; statusColor = 'var(--accent-text)'; }
+      else { statusText = 'Due in ' + dleft + ' days'; statusColor = 'var(--muted)'; }
+      return { title: b ? b.title : '', author: b ? b.author : '', borrowText: this.fmt(l.borrow), dueText: this.fmt(l.due), statusText, statusColor, overdue, edge: overdue ? 'var(--bad-fg)' : 'var(--primary)', fineText: this.money(over * this.finePerDay()), onReturn: () => this.returnLoan(l.id) };
+    });
+    const pastLoans = mine.filter(l => l.status === 'RETURNED').map(l => {
+      const b = s.books.find(x => x.id === l.bookId);
+      const f = l.fine != null ? l.fine : Math.max(0, -this.daysTo(l.due)) * this.finePerDay();
+      return { title: b ? b.title : '', borrowText: this.fmt(l.borrow), returnText: l.return ? this.fmt(l.return) : '—', fineText: f > 0 ? 'Fine ' + this.money(f) : 'No fine' };
+    });
+    const loans = { active: activeLoans, past: pastLoans, activeCount: activeLoans.length, pastCount: pastLoans.length, showActive: s.loansTab === 'active', showPast: s.loansTab === 'past', activeEmpty: activeLoans.length === 0, pastEmpty: pastLoans.length === 0 };
+    const tabStyle = (on) => on ? 'background:#fff;color:var(--text);border:none;border-radius:8px;padding:8px 18px;font:600 13.5px var(--ui);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06);' : 'background:transparent;color:var(--muted);border:none;border-radius:8px;padding:8px 18px;font:500 13.5px var(--ui);cursor:pointer;';
+
+    // profile
+    let me = null;
+    if (cur) {
+      const bd = this.badge(cur.status);
+      me = {
+        name: cur.name, card: cur.card, typeLine: cur.type + ' · Member since ' + cur.joined,
+        statusLabel: bd.label, statusBg: 'rgba(255,255,255,.16)', statusFg: '#fff',
+        rows: [
+          { k: 'Email', v: cur.email }, { k: 'Phone', v: cur.phone },
+          { k: cur.type === 'Staff' ? 'Staff ID' : 'Matric number', v: cur.staff || cur.matric || '—' },
+          { k: 'Member type', v: cur.type }, { k: 'Active loans', v: String(this.myActive().length) + ' of ' + this.loanLimit() },
+        ],
+      };
+    }
+
+    // dashboard
+    const totalActive = s.loans.filter(l => l.status === 'BORROWED').length;
+    const overdueLoans = s.loans.filter(l => l.status === 'BORROWED' && this.daysTo(l.due) < 0)
+      .map(l => { const b = s.books.find(x => x.id === l.bookId); const m = s.members.find(x => x.id === l.memberId); const over = Math.abs(this.daysTo(l.due)); return { memberName: m ? m.name : '', memberId: l.memberId, phone: m ? m.phone : '', title: b ? b.title : '', over, daysText: over + ' days', fineText: this.money(over * this.finePerDay()), onOpen: () => this.openMemberFromOverdue(l.memberId), onNotify: () => this.notify(m ? m.name : '') }; })
+      .sort((a, b) => b.over - a.over);
+    const suspendedCount = s.members.filter(m => m.status === 'SUSPENDED').length;
+    const dash = {
+      dateLine: 'Today is ' + this.fmt(this.now),
+      stats: [
+        { value: String(s.books.length), label: 'Titles in catalogue', edge: 'var(--primary)' },
+        { value: String(totalActive), label: 'Active loans', edge: 'var(--accent)' },
+        { value: String(overdueLoans.length), label: 'Overdue', edge: 'var(--bad-fg)' },
+        { value: String(suspendedCount), label: 'Suspended members', edge: 'var(--bad-fg)' },
+      ],
+      overdue: overdueLoans.slice(0, 4), noOverdue: overdueLoans.length === 0,
+    };
+
+    // add copy
+    let newBook = null;
+    if (s.newBookId) {
+      const b = s.books.find(x => x.id === s.newBookId);
+      if (b) newBook = { title: b.title, author: b.author, category: b.category, copies: b.copies.map(c => ({ barcode: c.barcode, shelf: c.shelf })), copyCount: b.copies.length, noCopies: b.copies.length === 0 };
+    }
+
+    // overdue screen
+    const overdue = { rows: overdueLoans, countText: overdueLoans.length + (overdueLoans.length === 1 ? ' loan past its due date' : ' loans past their due date'), empty: overdueLoans.length === 0, has: overdueLoans.length > 0 };
+
+    // members
+    const mq = s.memberSearch.trim().toLowerCase();
+    const mlist = s.members.filter(m => !mq || m.name.toLowerCase().includes(mq)).map(m => {
+      const bd = this.badge(m.status);
+      const sub = m.type + (m.matric ? ' · ' + m.matric : m.staff ? ' · ' + m.staff : '');
+      const active = s.selMemberId === m.id;
+      return { name: m.name, sub, initial: m.name[0], statusLabel: bd.label, statusBg: bd.bg, statusFg: bd.fg, onClick: () => this.selectMember(m.id), rowStyle: 'width:100%;display:flex;align-items:center;gap:13px;padding:14px 18px;border:none;border-bottom:1px solid var(--border);cursor:pointer;background:' + (active ? 'var(--primary-soft)' : 'transparent') + ';' };
+    });
+    let sel = null;
+    const selM = s.members.find(m => m.id === s.selMemberId);
+    if (selM) {
+      const bd = this.badge(selM.status);
+      const active = selM.status === 'ACTIVE';
+      const loanCount = s.loans.filter(l => l.memberId === selM.id && l.status === 'BORROWED').length;
+      sel = {
+        name: selM.name, card: selM.card, initial: selM.name[0], statusLabel: bd.label, statusBg: bd.bg, statusFg: bd.fg,
+        rows: [
+          { k: 'Email', v: selM.email }, { k: 'Phone', v: selM.phone },
+          { k: selM.type === 'Staff' ? 'Staff ID' : selM.type === 'Student' ? 'Matric number' : 'Member type', v: selM.staff || selM.matric || selM.type },
+          { k: 'Member since', v: selM.joined }, { k: 'Active loans', v: String(loanCount) },
+        ],
+        btnLabel: active ? 'Suspend member' : 'Reactivate member',
+        btnStyle: active
+          ? 'width:100%;background:var(--bad-bg);color:var(--bad-fg);border:1px solid transparent;border-radius:10px;padding:12px;font:600 14px var(--ui);cursor:pointer;'
+          : 'width:100%;background:var(--ok-bg);color:var(--ok-fg);border:1px solid transparent;border-radius:10px;padding:12px;font:600 14px var(--ui);cursor:pointer;',
+        onToggle: () => this.toggleStatus(selM.id),
+      };
+    }
+    const members = { list: mlist, hasSelection: !!sel, none: !sel };
+
+    // register
+    const typeStyle = (on) => on ? 'flex:1;background:var(--primary);color:#fff;border:1px solid var(--primary);border-radius:9px;padding:10px;font:600 13.5px var(--ui);cursor:pointer;' : 'flex:1;background:#fff;color:var(--muted);border:1px solid var(--border-strong);border-radius:9px;padding:10px;font:500 13.5px var(--ui);cursor:pointer;';
+    const regTypes = ['Student', 'Staff', 'External'].map(t => ({ label: t, style: typeStyle(s.reg.type === t), onClick: () => this.setState({ reg: { ...s.reg, type: t } }) }));
+
+    // style guide colors
+    const guideColors = [
+      { name: 'Primary', value: theme.primary, hex: theme.primary },
+      { name: 'Primary deep', value: theme.deep, hex: theme.deep },
+      { name: 'Primary soft', value: theme.soft, hex: theme.soft },
+      { name: 'Accent', value: '#b0782a', hex: '#b0782a' },
+      { name: 'Background', value: '#f5f2ea', hex: '#f5f2ea' },
+      { name: 'Surface', value: '#fffefb', hex: '#fffefb' },
+      { name: 'Border', value: '#e8e2d5', hex: '#e8e2d5' },
+      { name: 'Text', value: '#2a2620', hex: '#2a2620' },
+    ];
+
+    // field handlers
+    const fi = (g, k) => (e) => this.setIn(g, k, e.target.value);
+    const f = {
+      loginEmail: fi('login', 'email'), loginPass: fi('login', 'password'),
+      regName: fi('reg', 'fullName'), regEmail: fi('reg', 'email'), regPhone: fi('reg', 'phone'), regMatric: fi('reg', 'matric'), regStaff: fi('reg', 'staff'), regPass: fi('reg', 'password'), regConfirm: fi('reg', 'confirm'),
+      search: (e) => this.setTop('search', e.target.value),
+      addIsbn: fi('addBook', 'isbn'), addTitle: fi('addBook', 'title'), addAuthor: fi('addBook', 'author'), addCategory: fi('addBook', 'category'),
+      copyBarcode: fi('addCopy', 'barcode'), copyShelf: fi('addCopy', 'shelf'),
+      memberSearch: (e) => this.setTop('memberSearch', e.target.value),
+    };
+    const vals = {
+      loginEmail: s.login.email, loginPass: s.login.password,
+      regName: s.reg.fullName, regEmail: s.reg.email, regPhone: s.reg.phone, regMatric: s.reg.matric, regStaff: s.reg.staff, regPass: s.reg.password, regConfirm: s.reg.confirm,
+      search: s.search,
+      addIsbn: s.addBook.isbn, addTitle: s.addBook.title, addAuthor: s.addBook.author, addCategory: s.addBook.category,
+      copyBarcode: s.addCopy.barcode, copyShelf: s.addCopy.shelf,
+      memberSearch: s.memberSearch,
+    };
+
+    return {
+      theme, showChrome, navItems, user,
+      isLogin: s.screen === 'login', isRegister: s.screen === 'register', isCatalog: s.screen === 'catalog', isBook: s.screen === 'book',
+      isLoans: s.screen === 'loans', isProfile: s.screen === 'profile', isDash: s.screen === 'dashboard', isAddBook: s.screen === 'addBook',
+      isAddCopy: s.screen === 'addCopy', isOverdue: s.screen === 'overdue', isMembers: s.screen === 'members', isStyleGuide: s.screen === 'styleGuide',
+      toast: s.toast,
+      loginPoints,
+      catChips, availStyle, availDotStyle, catalog,
+      book,
+      loans, tabActiveStyle: tabStyle(s.loansTab === 'active'), tabPastStyle: tabStyle(s.loansTab === 'past'),
+      me, dash, newBook, overdue, members, sel, reg: s.reg, addBook: s.addBook, categories: cats,
+      regTypes, showMatric: s.reg.type === 'Student', showStaff: s.reg.type === 'Staff',
+      guideColors, f, vals,
+      // handlers
+      doLogin: () => this.doLogin(), enterMember: () => this.enterMember(), enterLibrarian: () => this.enterLibrarian(),
+      goRegister: () => this.go('register'), goLogin: () => this.go('login'), goStyleGuide: () => this.go('styleGuide'),
+      logout: () => this.logout(), backToCatalog: () => this.go('catalog'),
+      tabActive: () => this.setState({ loansTab: 'active' }), tabPast: () => this.setState({ loansTab: 'past' }),
+      toggleAvailable: () => this.setState({ availableOnly: !s.availableOnly }),
+      goDash: () => this.go('dashboard'), goAddBook: () => this.go('addBook'), goOverdue: () => this.go('overdue'), goMembers: () => this.go('members'),
+      submitRegister: () => this.submitRegister(), submitAddBook: () => this.submitAddBook(), addCopy: () => this.addCopy(), finishCopies: () => this.finishCopies(),
+    };
+  }
+}
+</script>
+</body>
+</html>
