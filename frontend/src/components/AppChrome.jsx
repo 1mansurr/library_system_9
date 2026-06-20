@@ -17,10 +17,11 @@ export default function AppChrome({ children }) {
 
   const navItems = isLibrarian
     ? [
-        { to: '/dashboard',           label: 'Dashboard' },
-        { to: '/catalog',             label: 'Catalogue' },
-        { to: '/dashboard/overdue',   label: 'Overdue' },
-        { to: '/dashboard/members',   label: 'Members' },
+        { to: '/dashboard',             label: 'Dashboard' },
+        { to: '/catalog',               label: 'Catalogue' },
+        { to: '/dashboard/approvals',   label: 'Approvals' },
+        { to: '/dashboard/overdue',     label: 'Overdue' },
+        { to: '/dashboard/members',     label: 'Members' },
       ]
     : [
         { to: '/catalog', label: 'Catalogue' },

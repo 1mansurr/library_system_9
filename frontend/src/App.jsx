@@ -16,6 +16,7 @@ import AddBook from './screens/AddBook';
 import AddCopy from './screens/AddCopy';
 import Overdue from './screens/Overdue';
 import Members from './screens/Members';
+import Approvals from './screens/Approvals';
 
 function RootRedirect() {
   const { isAuthenticated, isLibrarian } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/dashboard"                  element={<ProtectedRoute role="librarian"><LibrarianDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/books/new"        element={<ProtectedRoute role="librarian"><AddBook /></ProtectedRoute>} />
             <Route path="/dashboard/books/:id/copies" element={<ProtectedRoute role="librarian"><AddCopy /></ProtectedRoute>} />
+            <Route path="/dashboard/approvals"         element={<ProtectedRoute role="librarian"><Approvals /></ProtectedRoute>} />
             <Route path="/dashboard/overdue"          element={<ProtectedRoute role="librarian"><Overdue /></ProtectedRoute>} />
             <Route path="/dashboard/members"          element={<ProtectedRoute role="librarian"><Members /></ProtectedRoute>} />
           </Routes>

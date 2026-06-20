@@ -13,9 +13,12 @@ public interface LoanRepository extends JpaRepository<Loan, UUID> {
 
     List<Loan> findByUserId(UUID userId);
 
-    @Query("SELECT COUNT(l) FROM Loan l WHERE l.userId = :userId AND l.status = 'BORROWED'")
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.userId = :userId AND l.status IN ('BORROWED', 'PENDING')")
     long countActiveByUserId(@Param("userId") UUID userId);
 
-    @Query("SELECT l FROM Loan l WHERE l.status = 'BORROWED' AND l.dueDate < :now")
+    @Query("SELECT l FROM Loan l WHERE l.status IN ('BORROWED', 'PENDING_RETURN') AND l.dueDate < :now")
     List<Loan> findOverdue(@Param("now") OffsetDateTime now);
+
+    @Query("SELECT l FROM Loan l WHERE l.status IN ('PENDING', 'PENDING_RETURN') ORDER BY l.borrowDate ASC")
+    List<Loan> findPending();
 }

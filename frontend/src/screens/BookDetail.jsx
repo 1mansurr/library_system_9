@@ -49,12 +49,11 @@ export default function BookDetail() {
     setBorrowing(copyId);
     setReason('');
     try {
-      const loan = await apiFetch('/api/loans', {
+      await apiFetch('/api/loans', {
         method: 'POST',
         body: JSON.stringify({ copy_id: copyId }),
       });
-      const due = fmt(loan.due_date);
-      toast(`Borrowed: ${book.title}`, `Due ${due}`);
+      toast('Request submitted!', 'The librarian will review and approve your request.');
       await loadBook();
     } catch (err) {
       const status = err?.status;
@@ -147,7 +146,7 @@ export default function BookDetail() {
                 {!isLibrarian && cp.status === 'AVAILABLE' && (
                   <button onClick={() => borrow(cp.copy_id)} disabled={busy}
                     style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', font: '600 13px var(--ui)', cursor: busy ? 'wait' : 'pointer', flexShrink: 0, opacity: busy ? 0.7 : 1 }}>
-                    {busy ? 'Borrowing…' : 'Borrow'}
+                    {busy ? 'Requesting…' : 'Request to Borrow'}
                   </button>
                 )}
                 {!isLibrarian && cp.status !== 'AVAILABLE' && (

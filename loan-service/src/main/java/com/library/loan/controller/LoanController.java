@@ -35,11 +35,30 @@ public class LoanController {
     }
 
     @PostMapping("/{loanId}/return")
-    public ResponseEntity<LoanResponse> returnLoan(@PathVariable UUID loanId,
-                                                    @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<LoanResponse> requestReturn(@PathVariable UUID loanId,
+                                                      @AuthenticationPrincipal UserPrincipal principal) {
         boolean isLibrarian = principal.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_LIBRARIAN"));
-        return ResponseEntity.ok(loanService.returnLoan(loanId, principal.getUserId(), isLibrarian));
+        return ResponseEntity.ok(loanService.requestReturn(loanId, principal.getUserId(), isLibrarian));
+    }
+
+    @PostMapping("/{loanId}/approve")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public ResponseEntity<LoanResponse> approveBorrow(@PathVariable UUID loanId,
+                                                       HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(loanService.approveBorrow(loanId, extractRawToken(httpRequest)));
+    }
+
+    @PostMapping("/{loanId}/reject")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public ResponseEntity<LoanResponse> rejectBorrow(@PathVariable UUID loanId) {
+        return ResponseEntity.ok(loanService.rejectBorrow(loanId));
+    }
+
+    @PostMapping("/{loanId}/confirm-return")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public ResponseEntity<LoanResponse> confirmReturn(@PathVariable UUID loanId) {
+        return ResponseEntity.ok(loanService.confirmReturn(loanId));
     }
 
     @GetMapping("/me")
@@ -51,6 +70,12 @@ public class LoanController {
     @PreAuthorize("hasRole('LIBRARIAN')")
     public ResponseEntity<List<LoanResponse>> overdueLoans() {
         return ResponseEntity.ok(loanService.getOverdueLoans());
+    }
+
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public ResponseEntity<List<LoanResponse>> pendingLoans() {
+        return ResponseEntity.ok(loanService.getPendingLoans());
     }
 
     @GetMapping("/{loanId}")

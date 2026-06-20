@@ -55,6 +55,7 @@ public class LoanService {
         this.serviceToken = serviceToken;
     }
 
+    /** Member submits a borrow request — creates loan in PENDING state, copy not yet marked LOANED */
     @Transactional
     public LoanResponse borrow(UUID userId, BorrowRequest request, String bearerToken) {
         UUID copyId = request.copy_id();
@@ -75,8 +76,6 @@ public class LoanService {
             throw new ConflictException("Copy is not available for borrowing (status: " + copy.status() + ")");
         }
 
-        updateCopyStatus(copyId, "LOANED", correlationId);
-
         Loan loan = new Loan();
         loan.setLoanId(UUID.randomUUID());
         loan.setUserId(userId);
@@ -84,27 +83,62 @@ public class LoanService {
         OffsetDateTime now = OffsetDateTime.now();
         loan.setBorrowDate(now);
         loan.setDueDate(now.plusDays(loanPeriodDays));
-        loan.setStatus("BORROWED");
-        try {
-            loanRepository.save(loan);
-        } catch (Exception e) {
-            log.error("[{}] Failed to persist loan, attempting to revert copy {} to AVAILABLE", correlationId, copyId, e);
-            try {
-                updateCopyStatus(copyId, "AVAILABLE", correlationId);
-            } catch (Exception revertEx) {
-                log.error("[{}] Failed to revert copy {} to AVAILABLE after loan save failure", correlationId, copyId, revertEx);
-            }
-            throw new ServiceUnavailableException("Failed to create loan record");
-        }
+        loan.setStatus("PENDING");
+        loanRepository.save(loan);
 
-        log.info("[{}] Loan {} created for user {} copy {}", correlationId, loan.getLoanId(), userId, copyId);
+        log.info("[{}] Borrow request {} created for user {} copy {}", correlationId, loan.getLoanId(), userId, copyId);
         return toLoanResponse(loan);
     }
 
+    /** Librarian approves a borrow request — copy becomes LOANED, loan becomes BORROWED */
     @Transactional
-    public LoanResponse returnLoan(UUID loanId, UUID callerId, boolean isLibrarian) {
+    public LoanResponse approveBorrow(UUID loanId, String bearerToken) {
         String correlationId = UUID.randomUUID().toString();
 
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NotFoundException("Loan not found: " + loanId));
+
+        if (!"PENDING".equals(loan.getStatus())) {
+            throw new ConflictException("Loan is not in PENDING status");
+        }
+
+        CopyDto copy = fetchCopy(loan.getCopyId(), bearerToken, correlationId);
+        if (!"AVAILABLE".equals(copy.status())) {
+            throw new ConflictException("Copy is no longer available (status: " + copy.status() + ")");
+        }
+
+        updateCopyStatus(loan.getCopyId(), "LOANED", correlationId);
+
+        OffsetDateTime now = OffsetDateTime.now();
+        loan.setBorrowDate(now);
+        loan.setDueDate(now.plusDays(loanPeriodDays));
+        loan.setStatus("BORROWED");
+        loanRepository.save(loan);
+
+        log.info("[{}] Loan {} approved by librarian", correlationId, loanId);
+        return toLoanResponse(loan);
+    }
+
+    /** Librarian rejects a borrow request */
+    @Transactional
+    public LoanResponse rejectBorrow(UUID loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NotFoundException("Loan not found: " + loanId));
+
+        if (!"PENDING".equals(loan.getStatus())) {
+            throw new ConflictException("Loan is not in PENDING status");
+        }
+
+        loan.setStatus("REJECTED");
+        loanRepository.save(loan);
+
+        log.info("Loan {} rejected by librarian", loanId);
+        return toLoanResponse(loan);
+    }
+
+    /** Member submits a return request — loan moves to PENDING_RETURN, librarian must confirm */
+    @Transactional
+    public LoanResponse requestReturn(UUID loanId, UUID callerId, boolean isLibrarian) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new NotFoundException("Loan not found: " + loanId));
 
@@ -116,24 +150,37 @@ public class LoanService {
             throw new ForbiddenException("Not authorized to return this loan");
         }
 
+        loan.setStatus("PENDING_RETURN");
+        loanRepository.save(loan);
+
+        log.info("Return requested for loan {} by user {}", loanId, callerId);
+        return toLoanResponse(loan);
+    }
+
+    /** Librarian confirms receipt of returned book — copy becomes AVAILABLE, fine calculated */
+    @Transactional
+    public LoanResponse confirmReturn(UUID loanId) {
+        String correlationId = UUID.randomUUID().toString();
+
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NotFoundException("Loan not found: " + loanId));
+
+        if (!"PENDING_RETURN".equals(loan.getStatus())) {
+            throw new ConflictException("Loan is not in PENDING_RETURN status");
+        }
+
         OffsetDateTime returnDate = OffsetDateTime.now();
         loan.setReturnDate(returnDate);
 
-        long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), returnDate);
-        if (daysLate < 0) daysLate = 0;
-        // Use ceiling: if any fraction of a day is overdue, count it
         long secondsLate = ChronoUnit.SECONDS.between(loan.getDueDate(), returnDate);
-        if (secondsLate > 0) {
-            daysLate = (long) Math.ceil((double) secondsLate / 86400.0);
-        }
-
+        long daysLate = secondsLate > 0 ? (long) Math.ceil((double) secondsLate / 86400.0) : 0;
         loan.setFineAmount(dailyRate.multiply(BigDecimal.valueOf(daysLate)).setScale(2, RoundingMode.HALF_UP));
         loan.setStatus("RETURNED");
         loanRepository.save(loan);
 
         updateCopyStatus(loan.getCopyId(), "AVAILABLE", correlationId);
 
-        log.info("[{}] Loan {} returned, fine={}", correlationId, loanId, loan.getFineAmount());
+        log.info("[{}] Return confirmed for loan {}, fine={}", correlationId, loanId, loan.getFineAmount());
         return toLoanResponse(loan);
     }
 
@@ -155,6 +202,11 @@ public class LoanService {
     @Transactional(readOnly = true)
     public List<LoanResponse> getOverdueLoans() {
         return loanRepository.findOverdue(OffsetDateTime.now()).stream().map(this::toLoanResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LoanResponse> getPendingLoans() {
+        return loanRepository.findPending().stream().map(this::toLoanResponse).toList();
     }
 
     private UserDto fetchUser(UUID userId, String bearerToken, String correlationId) {
@@ -207,10 +259,11 @@ public class LoanService {
 
     private LoanResponse toLoanResponse(Loan loan) {
         OffsetDateTime now = OffsetDateTime.now();
-        boolean isOverdue = "BORROWED".equals(loan.getStatus()) && loan.getDueDate().isBefore(now);
+        boolean isOverdue = ("BORROWED".equals(loan.getStatus()) || "PENDING_RETURN".equals(loan.getStatus()))
+                && loan.getDueDate() != null && loan.getDueDate().isBefore(now);
 
         BigDecimal currentFineEstimate = null;
-        if ("BORROWED".equals(loan.getStatus()) && isOverdue) {
+        if (isOverdue) {
             long secondsLate = ChronoUnit.SECONDS.between(loan.getDueDate(), now);
             long daysLate = (long) Math.ceil((double) secondsLate / 86400.0);
             currentFineEstimate = dailyRate.multiply(BigDecimal.valueOf(daysLate)).setScale(2, RoundingMode.HALF_UP);
