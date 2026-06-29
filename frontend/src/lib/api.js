@@ -24,7 +24,7 @@ export async function apiFetch(path, options = {}) {
 
   const res = await fetch(resolveUrl(path), { ...options, headers });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !path.startsWith('/api/auth')) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('library_user');
     window.location.href = '/login';
