@@ -26,7 +26,7 @@ export default function Register() {
       setError('Please complete all required fields.'); return;
     }
     if (form.member_type === 'STUDENT' && !form.matric_no.trim()) {
-      setError('Students must provide a matriculation number.'); return;
+      setError('Students must provide an index number.'); return;
     }
     if (form.member_type === 'STAFF' && !form.staff_id.trim()) {
       setError('Staff must provide a staff ID.'); return;
@@ -114,7 +114,7 @@ export default function Register() {
 
             {form.member_type === 'STUDENT' && (
               <div>
-                <label style={labelStyle}>Matriculation number</label>
+                <label style={labelStyle}>Index Number</label>
                 <input value={form.matric_no} onChange={set('matric_no')} placeholder="e.g. 20512345" style={inputBase} onFocus={focusOn} onBlur={focusOff} />
               </div>
             )}
