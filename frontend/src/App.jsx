@@ -13,6 +13,7 @@ import MyLoans from './screens/MyLoans';
 import Profile from './screens/Profile';
 import LibrarianDashboard from './screens/LibrarianDashboard';
 import AddBook from './screens/AddBook';
+import ImportBooks from './screens/ImportBooks';
 import AddCopy from './screens/AddCopy';
 import Overdue from './screens/Overdue';
 import Members from './screens/Members';
@@ -46,6 +47,7 @@ export default function App() {
             {/* librarian */}
             <Route path="/dashboard"                  element={<ProtectedRoute role="librarian"><LibrarianDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/books/new"        element={<ProtectedRoute role="librarian"><AddBook /></ProtectedRoute>} />
+            <Route path="/dashboard/books/import"     element={<ProtectedRoute role="librarian"><ImportBooks /></ProtectedRoute>} />
             <Route path="/dashboard/books/:id/copies" element={<ProtectedRoute role="librarian"><AddCopy /></ProtectedRoute>} />
             <Route path="/dashboard/approvals"         element={<ProtectedRoute role="librarian"><Approvals /></ProtectedRoute>} />
             <Route path="/dashboard/overdue"          element={<ProtectedRoute role="librarian"><Overdue /></ProtectedRoute>} />
