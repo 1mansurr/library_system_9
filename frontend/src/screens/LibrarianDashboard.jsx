@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppChrome from '../components/AppChrome';
 import { apiFetch } from '../lib/api';
@@ -23,17 +23,23 @@ export default function LibrarianDashboard() {
           apiFetch('/api/loans/overdue'),
           apiFetch('/api/loans/pending'),
         ]);
+        const overdueArray = Array.isArray(overdueLoans) ? overdueLoans : [];
+        const pendingArray = Array.isArray(pendingLoans) ? pendingLoans : [];
         setStats({
           titles:  booksPage.total ?? 0,
-          overdue: overdueLoans.length,
-          pending: pendingLoans.length,
+          overdue: overdueArray.length,
+          pending: pendingArray.length,
         });
-        const sorted = [...overdueLoans].sort((a, b) =>
-          new Date(a.due_date) - new Date(b.due_date)
-        ).slice(0, 4);
+
+        const sorted = overdueArray
+          .filter(l => l && l.due_date)
+          .slice()
+          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+          .slice(0, 4);
+
         setOverdue(sorted);
 
-        const ids = [...new Set(sorted.map(l => l.user_id))];
+        const ids = [...new Set(sorted.map(l => l.user_id).filter(Boolean))];
         const resolved = {};
         await Promise.all(ids.map(async id => {
           try {
@@ -58,7 +64,10 @@ export default function LibrarianDashboard() {
   ] : [];
 
   function daysOverdue(dueDate) {
-    return Math.round((new Date() - new Date(dueDate)) / 86400000);
+    if (!dueDate) return 0;
+    const ms = new Date() - new Date(dueDate);
+    if (!Number.isFinite(ms)) return 0;
+    return Math.round(ms / 86400000);
   }
 
   return (
@@ -95,7 +104,9 @@ export default function LibrarianDashboard() {
                 <div key={o.loan_id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 22px', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ font: '600 14px var(--ui)', color: 'var(--text)' }}>{names[o.user_id] ?? '…'}</div>
-                    <div style={{ font: '400 12.5px var(--ui)', color: 'var(--muted)' }}>Copy {o.copy_id?.slice(0, 8)}</div>
+                    <div style={{ font: '400 12.5px var(--ui)', color: 'var(--muted)' }}>
+                      Copy {o.copy_id ? String(o.copy_id).slice(0, 8) : '—'}
+                    </div>
                   </div>
                   <div style={{ font: '600 12.5px var(--ui)', color: 'var(--bad-fg)', background: 'var(--bad-bg)', padding: '3px 10px', borderRadius: 7 }}>{days} days</div>
                 </div>
