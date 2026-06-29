@@ -87,7 +87,7 @@ export default function Register() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
                 <label style={labelStyle}>Email</label>
-                <input type="email" value={form.email} onChange={set('email')} placeholder="you@st.knust.edu.gh" style={inputBase} onFocus={focusOn} onBlur={focusOff} />
+                <input type="email" value={form.email} onChange={set('email')} placeholder={{ STUDENT: 'you@st.knust.edu.gh', STAFF: 'you@knust.edu.gh', EXTERNAL: 'you@gmail.com' }[form.member_type]} style={inputBase} onFocus={focusOn} onBlur={focusOff} />
               </div>
               <div>
                 <label style={labelStyle}>Phone</label>
