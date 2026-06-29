@@ -52,6 +52,7 @@ export default function App() {
             <Route path="/dashboard/approvals"         element={<ProtectedRoute role="librarian"><Approvals /></ProtectedRoute>} />
             <Route path="/dashboard/overdue"          element={<ProtectedRoute role="librarian"><Overdue /></ProtectedRoute>} />
             <Route path="/dashboard/members"          element={<ProtectedRoute role="librarian"><Members /></ProtectedRoute>} />
+            <Route path="/dashboard/catalog"          element={<ProtectedRoute role="librarian"><Catalog /></ProtectedRoute>} />
           </Routes>
         </ToastProvider>
       </AuthProvider>
