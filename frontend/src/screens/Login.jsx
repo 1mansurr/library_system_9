@@ -93,25 +93,6 @@ export default function Login() {
             </button>
           </form>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '24px 0 16px', color: 'var(--faint)', font: '500 12px var(--ui)' }}>
-            <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            quick access
-            <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-            <button type="button"
-              onClick={() => { setEmail('librarian@library.com'); setPassword('librarian123'); }}
-              style={{ padding: '10px 12px', background: 'var(--primary-soft)', color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 9, font: '600 13px var(--ui)', cursor: 'pointer', textAlign: 'center' }}>
-              Sign in as Librarian
-            </button>
-            <button type="button"
-              onClick={() => { setEmail('student@test.com'); setPassword('pass1234'); }}
-              style={{ padding: '10px 12px', background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 9, font: '600 13px var(--ui)', cursor: 'pointer', textAlign: 'center' }}>
-              Sign in as Member
-            </button>
-          </div>
-
           <p style={{ textAlign: 'center', font: '400 14px var(--ui)', color: 'var(--muted)', margin: '10px 0 0' }}>
             New here?{' '}
             <Link to="/register" style={{ color: 'var(--primary)', font: '600 14px var(--ui)', textDecoration: 'underline', textUnderlineOffset: 2 }}>Create an account</Link>
