@@ -39,8 +39,8 @@ export default function App() {
             <Route path="/" element={<RootRedirect />} />
 
             {/* member */}
-            <Route path="/catalog"   element={<ProtectedRoute role="member"><Catalog /></ProtectedRoute>} />
-            <Route path="/books/:id" element={<ProtectedRoute role="member"><BookDetail /></ProtectedRoute>} />
+            <Route path="/catalog"   element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+            <Route path="/books/:id" element={<ProtectedRoute><BookDetail /></ProtectedRoute>} />
             <Route path="/loans"     element={<ProtectedRoute role="member"><MyLoans /></ProtectedRoute>} />
             <Route path="/profile"   element={<ProtectedRoute role="member"><Profile /></ProtectedRoute>} />
 
@@ -52,7 +52,6 @@ export default function App() {
             <Route path="/dashboard/approvals"         element={<ProtectedRoute role="librarian"><Approvals /></ProtectedRoute>} />
             <Route path="/dashboard/overdue"          element={<ProtectedRoute role="librarian"><Overdue /></ProtectedRoute>} />
             <Route path="/dashboard/members"          element={<ProtectedRoute role="librarian"><Members /></ProtectedRoute>} />
-            <Route path="/dashboard/catalog"          element={<ProtectedRoute role="librarian"><Catalog /></ProtectedRoute>} />
           </Routes>
         </ToastProvider>
       </AuthProvider>
