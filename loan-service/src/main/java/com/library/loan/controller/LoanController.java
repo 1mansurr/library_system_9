@@ -1,6 +1,7 @@
 package com.library.loan.controller;
 
 import com.library.loan.dto.BorrowRequest;
+import com.library.loan.dto.CopyBorrowCount;
 import com.library.loan.dto.LoanResponse;
 import com.library.loan.security.UserPrincipal;
 import com.library.loan.service.LoanService;
@@ -35,30 +36,11 @@ public class LoanController {
     }
 
     @PostMapping("/{loanId}/return")
-    public ResponseEntity<LoanResponse> requestReturn(@PathVariable UUID loanId,
-                                                      @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<LoanResponse> returnLoan(@PathVariable UUID loanId,
+                                                    @AuthenticationPrincipal UserPrincipal principal) {
         boolean isLibrarian = principal.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_LIBRARIAN"));
-        return ResponseEntity.ok(loanService.requestReturn(loanId, principal.getUserId(), isLibrarian));
-    }
-
-    @PostMapping("/{loanId}/approve")
-    @PreAuthorize("hasRole('LIBRARIAN')")
-    public ResponseEntity<LoanResponse> approveBorrow(@PathVariable UUID loanId,
-                                                       HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(loanService.approveBorrow(loanId, extractRawToken(httpRequest)));
-    }
-
-    @PostMapping("/{loanId}/reject")
-    @PreAuthorize("hasRole('LIBRARIAN')")
-    public ResponseEntity<LoanResponse> rejectBorrow(@PathVariable UUID loanId) {
-        return ResponseEntity.ok(loanService.rejectBorrow(loanId));
-    }
-
-    @PostMapping("/{loanId}/confirm-return")
-    @PreAuthorize("hasRole('LIBRARIAN')")
-    public ResponseEntity<LoanResponse> confirmReturn(@PathVariable UUID loanId) {
-        return ResponseEntity.ok(loanService.confirmReturn(loanId));
+        return ResponseEntity.ok(loanService.returnLoan(loanId, principal.getUserId(), isLibrarian));
     }
 
     @GetMapping("/me")
@@ -72,10 +54,16 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getOverdueLoans());
     }
 
-    @GetMapping("/pending")
+    @GetMapping
     @PreAuthorize("hasRole('LIBRARIAN')")
-    public ResponseEntity<List<LoanResponse>> pendingLoans() {
-        return ResponseEntity.ok(loanService.getPendingLoans());
+    public ResponseEntity<List<LoanResponse>> listLoans(@RequestParam(required = false) String status) {
+        return ResponseEntity.ok(loanService.listLoans(status));
+    }
+
+    @GetMapping("/stats/most-borrowed")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public ResponseEntity<List<CopyBorrowCount>> mostBorrowed() {
+        return ResponseEntity.ok(loanService.getMostBorrowed());
     }
 
     @GetMapping("/{loanId}")

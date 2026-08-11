@@ -5,11 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/auth':   'http://localhost:8081',
-      '/api/users':  'http://localhost:8081',
-      '/api/books':  'http://localhost:8082',
-      '/api/copies': 'http://localhost:8082',
-      '/api/loans':  'http://localhost:8083',
+      '/api/auth':        'http://localhost:8081',
+      '/api/users':       'http://localhost:8081',
+      '/api/books':       'http://localhost:8082',
+      '/api/copies':      'http://localhost:8082',
+      '/api/colleges':    'http://localhost:8082',
+      '/api/departments': 'http://localhost:8082',
+      '/api/loans':       'http://localhost:8083',
     },
   },
 })

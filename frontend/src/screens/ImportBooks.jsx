@@ -8,7 +8,6 @@ const COL_ALIASES = {
   isbn:     ['isbn'],
   title:    ['title', 'book title', 'book_title'],
   author:   ['author', 'authors', 'author name', 'author_name'],
-  category: ['category', 'genre', 'subject', 'department'],
   copies:   ['copies', 'quantity', 'count', 'qty'],
 };
 
@@ -33,7 +32,6 @@ function parseWorkbook(wb) {
         isbn:     String(row[colMap.isbn]   || '').trim(),
         title:    String(row[colMap.title]  || '').trim(),
         author:   String(row[colMap.author] || '').trim(),
-        category: colMap.category ? String(row[colMap.category] || '').trim() : '',
         copies:   Math.max(1, parseInt(colMap.copies ? row[colMap.copies] : 1) || 1),
       }))
       .filter(r => r.isbn && r.title && r.author),
@@ -44,9 +42,9 @@ function parseWorkbook(wb) {
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet([
-    { isbn: '978-0134685991', title: 'Effective Java', author: 'Joshua Bloch', category: 'Computer Science', copies: 3 },
-    { isbn: '978-0132350884', title: 'Clean Code', author: 'Robert C. Martin', category: 'Computer Science', copies: 2 },
-    { isbn: '978-0201633610', title: 'Design Patterns', author: 'Gang of Four', category: 'Computer Science', copies: 1 },
+    { isbn: '978-0134685991', title: 'Effective Java', author: 'Joshua Bloch', copies: 3 },
+    { isbn: '978-0132350884', title: 'Clean Code', author: 'Robert C. Martin', copies: 2 },
+    { isbn: '978-0201633610', title: 'Design Patterns', author: 'Gang of Four', copies: 1 },
   ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Books');
   XLSX.writeFile(wb, 'book_catalogue_template.xlsx');
@@ -109,17 +107,16 @@ export default function ImportBooks() {
         const book = await apiFetch('/api/books', {
           method: 'POST',
           body: JSON.stringify({
-            isbn:     row.isbn,
-            title:    row.title,
-            author:   row.author,
-            category: row.category || undefined,
+            isbn:   row.isbn,
+            title:  row.title,
+            author: row.author,
           }),
         });
         await Promise.all(
           Array.from({ length: row.copies }, (_, c) =>
             apiFetch(`/api/books/${book.book_id}/copies`, {
               method: 'POST',
-              body: JSON.stringify({ barcode: `${row.isbn}-${String(c + 1).padStart(3, '0')}` }),
+              body: JSON.stringify({ barcode: `${row.isbn}-${String(c + 1).padStart(3, '0')}`, format: 'HARDCOPY' }),
             }).catch(() => null)
           )
         );
@@ -194,9 +191,10 @@ export default function ImportBooks() {
                 {['isbn', 'title', 'author'].map(c => (
                   <span key={c} style={{ font: '600 12px var(--ui)', background: 'var(--primary)', color: '#fff', padding: '3px 10px', borderRadius: 6 }}>{c}</span>
                 ))}
-                {['category', 'copies'].map(c => (
-                  <span key={c} style={{ font: '600 12px var(--ui)', background: 'var(--surface-2)', color: 'var(--muted)', border: '1px solid var(--border-strong)', padding: '3px 10px', borderRadius: 6 }}>{c} (optional)</span>
-                ))}
+                <span style={{ font: '600 12px var(--ui)', background: 'var(--surface-2)', color: 'var(--muted)', border: '1px solid var(--border-strong)', padding: '3px 10px', borderRadius: 6 }}>copies (optional)</span>
+              </div>
+              <div style={{ font: '400 12.5px var(--ui)', color: 'var(--muted)', marginBottom: 16 }}>
+                Imported books aren't assigned to a college/department/course — add them individually via "Add a new book" if you need them to appear in the course catalogue.
               </div>
               <button onClick={downloadTemplate}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'none', border: '1px solid var(--border-strong)', borderRadius: 9, padding: '9px 16px', font: '600 13px var(--ui)', color: 'var(--text)', cursor: 'pointer' }}>
@@ -235,7 +233,6 @@ export default function ImportBooks() {
                       <th style={th}>Title</th>
                       <th style={th}>Author</th>
                       <th style={th}>ISBN</th>
-                      <th style={th}>Category</th>
                       <th style={{ ...th, textAlign: 'center' }}>Copies</th>
                     </tr>
                   </thead>
@@ -246,7 +243,6 @@ export default function ImportBooks() {
                         <td style={{ ...td, fontWeight: 500, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.title}</td>
                         <td style={{ ...td, color: 'var(--muted)' }}>{row.author}</td>
                         <td style={{ ...td, fontVariantNumeric: 'tabular-nums', color: 'var(--muted)' }}>{row.isbn}</td>
-                        <td style={{ ...td, color: 'var(--muted)' }}>{row.category || '—'}</td>
                         <td style={{ ...td, textAlign: 'center' }}>{row.copies}</td>
                       </tr>
                     ))}

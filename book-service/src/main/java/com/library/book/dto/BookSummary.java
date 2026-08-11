@@ -7,7 +7,10 @@ public record BookSummary(
         String title,
         String author,
         String isbn,
-        String category,
+        UUID course_id,
+        String course_name,
+        String department_name,
+        String college_name,
         long available_copies,
         long total_copies
 ) {}

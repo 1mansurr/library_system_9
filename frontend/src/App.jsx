@@ -7,6 +7,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './screens/Login';
 import Register from './screens/Register';
+import CollegePicker from './screens/CollegePicker';
+import DepartmentPicker from './screens/DepartmentPicker';
+import CoursePicker from './screens/CoursePicker';
 import Catalog from './screens/Catalog';
 import BookDetail from './screens/BookDetail';
 import MyLoans from './screens/MyLoans';
@@ -17,7 +20,7 @@ import ImportBooks from './screens/ImportBooks';
 import AddCopy from './screens/AddCopy';
 import Overdue from './screens/Overdue';
 import Members from './screens/Members';
-import Approvals from './screens/Approvals';
+import Reports from './screens/Reports';
 
 function RootRedirect() {
   const { isAuthenticated, isLibrarian } = useAuth();
@@ -39,7 +42,10 @@ export default function App() {
             <Route path="/" element={<RootRedirect />} />
 
             {/* member */}
-            <Route path="/catalog"   element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+            <Route path="/catalog"                                                              element={<ProtectedRoute><CollegePicker /></ProtectedRoute>} />
+            <Route path="/catalog/college/:collegeId"                                            element={<ProtectedRoute><DepartmentPicker /></ProtectedRoute>} />
+            <Route path="/catalog/college/:collegeId/department/:departmentId"                   element={<ProtectedRoute><CoursePicker /></ProtectedRoute>} />
+            <Route path="/catalog/college/:collegeId/department/:departmentId/course/:courseId"  element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/books/:id" element={<ProtectedRoute><BookDetail /></ProtectedRoute>} />
             <Route path="/loans"     element={<ProtectedRoute role="member"><MyLoans /></ProtectedRoute>} />
             <Route path="/profile"   element={<ProtectedRoute role="member"><Profile /></ProtectedRoute>} />
@@ -49,7 +55,7 @@ export default function App() {
             <Route path="/dashboard/books/new"        element={<ProtectedRoute role="librarian"><AddBook /></ProtectedRoute>} />
             <Route path="/dashboard/books/import"     element={<ProtectedRoute role="librarian"><ImportBooks /></ProtectedRoute>} />
             <Route path="/dashboard/books/:id/copies" element={<ProtectedRoute role="librarian"><AddCopy /></ProtectedRoute>} />
-            <Route path="/dashboard/approvals"         element={<ProtectedRoute role="librarian"><Approvals /></ProtectedRoute>} />
+            <Route path="/dashboard/reports"          element={<ProtectedRoute role="librarian"><Reports /></ProtectedRoute>} />
             <Route path="/dashboard/overdue"          element={<ProtectedRoute role="librarian"><Overdue /></ProtectedRoute>} />
             <Route path="/dashboard/members"          element={<ProtectedRoute role="librarian"><Members /></ProtectedRoute>} />
           </Routes>

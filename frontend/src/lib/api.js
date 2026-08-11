@@ -5,11 +5,13 @@ function getToken() {
 }
 
 const SERVICE_BASES = {
-  '/api/auth':   import.meta.env.VITE_USER_SERVICE_URL  || '',
-  '/api/users':  import.meta.env.VITE_USER_SERVICE_URL  || '',
-  '/api/books':  import.meta.env.VITE_BOOK_SERVICE_URL  || '',
-  '/api/copies': import.meta.env.VITE_BOOK_SERVICE_URL  || '',
-  '/api/loans':  import.meta.env.VITE_LOAN_SERVICE_URL  || '',
+  '/api/auth':        import.meta.env.VITE_USER_SERVICE_URL  || '',
+  '/api/users':       import.meta.env.VITE_USER_SERVICE_URL  || '',
+  '/api/books':       import.meta.env.VITE_BOOK_SERVICE_URL  || '',
+  '/api/copies':      import.meta.env.VITE_BOOK_SERVICE_URL  || '',
+  '/api/colleges':    import.meta.env.VITE_BOOK_SERVICE_URL  || '',
+  '/api/departments': import.meta.env.VITE_BOOK_SERVICE_URL  || '',
+  '/api/loans':       import.meta.env.VITE_LOAN_SERVICE_URL  || '',
 };
 
 function resolveUrl(path) {

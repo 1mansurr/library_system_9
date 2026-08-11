@@ -22,8 +22,9 @@ public class Book {
     @Column(nullable = false)
     private String author;
 
-    @Column
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    private CourseOfStudy course;
 
     @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
     private List<BookCopy> copies = new ArrayList<>();
@@ -36,8 +37,8 @@ public class Book {
     public void setTitle(String title) { this.title = title; }
     public String getAuthor() { return author; }
     public void setAuthor(String author) { this.author = author; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public CourseOfStudy getCourse() { return course; }
+    public void setCourse(CourseOfStudy course) { this.course = course; }
     public List<BookCopy> getCopies() { return copies; }
     public void setCopies(List<BookCopy> copies) { this.copies = copies; }
 }

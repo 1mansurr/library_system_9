@@ -11,9 +11,9 @@ export default function AddCopy() {
 
   const [book, setBook]     = useState(null);
   const [copies, setCopies] = useState([]);
-  const [barcode, setBarcode]   = useState('');
-  const [location, setLocation] = useState('');
-  const [adding, setAdding]     = useState(false);
+  const [barcode, setBarcode] = useState('');
+  const [format, setFormat]   = useState('HARDCOPY');
+  const [adding, setAdding]   = useState(false);
 
   useEffect(() => {
     apiFetch(`/api/books/${id}`).then(b => {
@@ -28,12 +28,11 @@ export default function AddCopy() {
     try {
       const copy = await apiFetch(`/api/books/${id}/copies`, {
         method: 'POST',
-        body: JSON.stringify({ barcode: barcode.trim(), location: location.trim() || undefined }),
+        body: JSON.stringify({ barcode: barcode.trim(), format }),
       });
-      toast('Copy added.', barcode.trim());
+      toast('Copy added.', copy.format === 'SOFTCOPY' ? 'Digital copy' : `Assigned to shelf ${copy.location}`);
       setCopies(prev => [...prev, copy]);
       setBarcode('');
-      setLocation('');
     } catch (err) {
       const msg = err?.body?.message || err?.body?.error || 'Failed to add copy.';
       toast(msg);
@@ -67,7 +66,7 @@ export default function AddCopy() {
         {book && (
           <>
             <h1 style={{ font: '600 28px var(--serif)', letterSpacing: '-.015em', margin: '10px 0 4px' }}>{book.title}</h1>
-            <p style={{ font: '400 14px var(--ui)', color: 'var(--muted)', margin: '0 0 24px' }}>{book.author} · {book.category}</p>
+            <p style={{ font: '400 14px var(--ui)', color: 'var(--muted)', margin: '0 0 24px' }}>{book.author}{book.course_name ? ` · ${book.course_name}` : ''}</p>
           </>
         )}
 
@@ -79,9 +78,11 @@ export default function AddCopy() {
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCopy(); } }} />
             </div>
             <div>
-              <label style={{ display: 'block', font: '500 13px var(--ui)', color: 'var(--muted)', marginBottom: 7 }}>Shelf location</label>
-              <input value={location} onChange={e => setLocation(e.target.value)} placeholder="CSC 14-03" style={inputBase} onFocus={focusOn} onBlur={focusOff}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCopy(); } }} />
+              <label style={{ display: 'block', font: '500 13px var(--ui)', color: 'var(--muted)', marginBottom: 7 }}>Format</label>
+              <select value={format} onChange={e => setFormat(e.target.value)} style={{ ...inputBase, cursor: 'pointer' }} onFocus={focusOn} onBlur={focusOff}>
+                <option value="HARDCOPY">Hardcopy</option>
+                <option value="SOFTCOPY">Softcopy</option>
+              </select>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -108,7 +109,7 @@ export default function AddCopy() {
             <div key={cp.copy_id} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 11, padding: '13px 18px' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 7, font: '600 11px var(--ui)', background: 'var(--ok-bg)', color: 'var(--ok-fg)' }}>Available</span>
               <div style={{ font: '500 14px var(--ui)', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{cp.barcode}</div>
-              <div style={{ marginLeft: 'auto', font: '400 12.5px var(--ui)', color: 'var(--muted)' }}>{cp.location ? `Shelf ${cp.location}` : ''}</div>
+              <div style={{ marginLeft: 'auto', font: '400 12.5px var(--ui)', color: 'var(--muted)' }}>{cp.format === 'SOFTCOPY' ? 'Digital copy' : `Shelf ${cp.location}`}</div>
             </div>
           ))}
         </div>

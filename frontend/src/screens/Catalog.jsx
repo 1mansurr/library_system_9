@@ -1,25 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import AppChrome from '../components/AppChrome';
 import { apiFetch } from '../lib/api';
 
-const CATEGORIES = ['Computer Science', 'Engineering', 'Sciences', 'Business', 'Humanities'];
-
 export default function Catalog() {
+  const { collegeId, departmentId, courseId } = useParams();
   const navigate = useNavigate();
+  const [courseName, setCourseName]   = useState('');
   const [books, setBooks]             = useState([]);
   const [total, setTotal]             = useState(0);
   const [loading, setLoading]         = useState(true);
   const [search, setSearch]           = useState('');
-  const [category, setCategory]       = useState('');
   const [availableOnly, setAvail]     = useState(false);
+
+  useEffect(() => {
+    apiFetch(`/api/departments/${departmentId}/courses`)
+      .then(courses => setCourseName(courses.find(c => c.course_id === courseId)?.name ?? ''));
+  }, [departmentId, courseId]);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: 0, size: 50 });
+      const params = new URLSearchParams({ page: 0, size: 50, course_id: courseId });
       if (search)        params.set('title', search);
-      if (category)      params.set('category', category);
       if (availableOnly) params.set('available_only', 'true');
       const data = await apiFetch(`/api/books?${params}`);
       setBooks(data.content ?? []);
@@ -27,14 +30,12 @@ export default function Catalog() {
     } finally {
       setLoading(false);
     }
-  }, [search, category, availableOnly]);
+  }, [search, availableOnly, courseId]);
 
   useEffect(() => {
     const id = setTimeout(fetchBooks, search ? 300 : 0);
     return () => clearTimeout(id);
   }, [fetchBooks, search]);
-
-  const chipCats = ['All', ...CATEGORIES];
 
   function availCount(book) { return book.available_copies ?? 0; }
   function totalCount(book) { return book.total_copies ?? 0; }
@@ -42,9 +43,15 @@ export default function Catalog() {
   return (
     <AppChrome>
       <main style={{ maxWidth: 1120, margin: '0 auto', padding: '40px 24px 90px', animation: 'fadeUp .35s ease' }}>
+        <button onClick={() => navigate(`/catalog/college/${collegeId}/department/${departmentId}`)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--muted)', font: '500 13.5px var(--ui)', cursor: 'pointer', padding: 0, marginBottom: 20 }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Courses
+        </button>
+
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 26 }}>
           <div>
-            <h1 style={{ font: '600 38px var(--serif)', letterSpacing: '-.01em', lineHeight: 1.13, margin: '0 0 5px' }}>Catalogue</h1>
+            <h1 style={{ font: '600 38px var(--serif)', letterSpacing: '-.01em', lineHeight: 1.13, margin: '0 0 5px' }}>{courseName || 'Catalogue'}</h1>
             <p style={{ font: '400 15px var(--ui)', color: 'var(--muted)', margin: 0 }}>
               {loading ? 'Loading…' : `${books.length} of ${total} titles`}
             </p>
@@ -64,16 +71,6 @@ export default function Catalog() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
-          {chipCats.map(c => {
-            const active = c === 'All' ? !category : category === c;
-            return (
-              <button key={c} onClick={() => setCategory(c === 'All' ? '' : c)}
-                style={{ background: active ? 'var(--primary)' : '#fff', color: active ? '#fff' : 'var(--muted)', border: `1px solid ${active ? 'var(--primary)' : 'var(--border-strong)'}`, borderRadius: 20, padding: '7px 15px', font: `${active ? 600 : 500} 13px var(--ui)`, cursor: 'pointer' }}>
-                {c}
-              </button>
-            );
-          })}
-          <div style={{ width: 1, height: 22, background: 'var(--border)', margin: '0 4px' }} />
           <button onClick={() => setAvail(v => !v)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: availableOnly ? 'var(--primary-soft)' : '#fff', color: availableOnly ? 'var(--primary)' : 'var(--muted)', border: `1px solid ${availableOnly ? 'var(--primary)' : 'var(--border-strong)'}`, borderRadius: 20, padding: '7px 14px', font: `${availableOnly ? 600 : 500} 13px var(--ui)`, cursor: 'pointer' }}>
             <span style={{ width: 9, height: 9, borderRadius: '50%', background: availableOnly ? 'var(--primary)' : 'var(--faint)', flexShrink: 0 }} />
@@ -96,7 +93,6 @@ export default function Catalog() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}
               >
-                <div style={{ font: '400 13px var(--ui)', color: 'var(--muted)', marginBottom: 9 }}>{book.category}</div>
                 <div style={{ font: '600 19px/1.25 var(--serif)', color: 'var(--text)', marginBottom: 5, minHeight: 46 }}>{book.title}</div>
                 <div style={{ font: '400 15px var(--serif)', color: 'var(--muted)', marginBottom: 18 }}>{book.author}</div>
                 <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>

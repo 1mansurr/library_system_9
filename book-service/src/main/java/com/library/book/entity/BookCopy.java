@@ -21,6 +21,9 @@ public class BookCopy {
     @Column(nullable = false)
     private String status = "AVAILABLE";
 
+    @Column(nullable = false)
+    private String format = "HARDCOPY";
+
     @Column
     private String location;
 
@@ -32,6 +35,8 @@ public class BookCopy {
     public void setBarcode(String barcode) { this.barcode = barcode; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getFormat() { return format; }
+    public void setFormat(String format) { this.format = format; }
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 }

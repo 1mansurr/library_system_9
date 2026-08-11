@@ -16,13 +16,13 @@ public interface BookRepository extends JpaRepository<Book, UUID> {
         SELECT DISTINCT b FROM Book b
         WHERE (:title = '' OR LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%')))
           AND (:author = '' OR LOWER(b.author) LIKE LOWER(CONCAT('%', :author, '%')))
-          AND (:category = '' OR LOWER(b.category) LIKE LOWER(CONCAT('%', :category, '%')))
+          AND (:courseId IS NULL OR b.course.courseId = :courseId)
           AND (:availableOnly = false OR EXISTS (
                 SELECT c FROM BookCopy c WHERE c.book = b AND c.status = 'AVAILABLE'))
         """)
     Page<Book> search(@Param("title") String title,
                       @Param("author") String author,
-                      @Param("category") String category,
+                      @Param("courseId") UUID courseId,
                       @Param("availableOnly") boolean availableOnly,
                       Pageable pageable);
 }

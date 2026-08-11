@@ -1,5 +1,6 @@
 package com.library.loan.repository;
 
+import com.library.loan.dto.CopyBorrowCount;
 import com.library.loan.entity.Loan;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,12 +14,17 @@ public interface LoanRepository extends JpaRepository<Loan, UUID> {
 
     List<Loan> findByUserId(UUID userId);
 
-    @Query("SELECT COUNT(l) FROM Loan l WHERE l.userId = :userId AND l.status IN ('BORROWED', 'PENDING')")
+    List<Loan> findByStatus(String status);
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.userId = :userId AND l.status = 'BORROWED'")
     long countActiveByUserId(@Param("userId") UUID userId);
 
-    @Query("SELECT l FROM Loan l WHERE l.status IN ('BORROWED', 'PENDING_RETURN') AND l.dueDate < :now")
+    @Query("SELECT l FROM Loan l WHERE l.status = 'BORROWED' AND l.dueDate < :now")
     List<Loan> findOverdue(@Param("now") OffsetDateTime now);
 
-    @Query("SELECT l FROM Loan l WHERE l.status IN ('PENDING', 'PENDING_RETURN') ORDER BY l.borrowDate ASC")
-    List<Loan> findPending();
+    @Query("""
+        SELECT new com.library.loan.dto.CopyBorrowCount(l.copyId, COUNT(l))
+        FROM Loan l GROUP BY l.copyId ORDER BY COUNT(l) DESC
+        """)
+    List<CopyBorrowCount> countBorrowsByCopy();
 }

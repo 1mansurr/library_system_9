@@ -3,12 +3,16 @@ package com.library.book.service;
 import com.library.book.dto.*;
 import com.library.book.entity.Book;
 import com.library.book.entity.BookCopy;
+import com.library.book.entity.CourseOfStudy;
+import com.library.book.entity.Department;
 import com.library.book.exception.ConflictException;
 import com.library.book.exception.NotFoundException;
 import com.library.book.repository.BookCopyRepository;
 import com.library.book.repository.BookRepository;
+import com.library.book.repository.CourseOfStudyRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,13 +25,21 @@ import java.util.UUID;
 public class BookService {
 
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
+    private static final String FALLBACK_SHELF_PREFIX = "GEN";
 
     private final BookRepository bookRepository;
     private final BookCopyRepository bookCopyRepository;
+    private final CourseOfStudyRepository courseOfStudyRepository;
+    private final int shelfCapacity;
 
-    public BookService(BookRepository bookRepository, BookCopyRepository bookCopyRepository) {
+    public BookService(BookRepository bookRepository,
+                       BookCopyRepository bookCopyRepository,
+                       CourseOfStudyRepository courseOfStudyRepository,
+                       @Value("${shelf.capacity}") int shelfCapacity) {
         this.bookRepository = bookRepository;
         this.bookCopyRepository = bookCopyRepository;
+        this.courseOfStudyRepository = courseOfStudyRepository;
+        this.shelfCapacity = shelfCapacity;
     }
 
     @Transactional
@@ -40,18 +52,22 @@ public class BookService {
         book.setIsbn(request.isbn());
         book.setTitle(request.title());
         book.setAuthor(request.author());
-        book.setCategory(request.category());
+        if (request.course_id() != null) {
+            CourseOfStudy course = courseOfStudyRepository.findById(request.course_id())
+                    .orElseThrow(() -> new NotFoundException("Course of study not found: " + request.course_id()));
+            book.setCourse(course);
+        }
         bookRepository.save(book);
         log.info("Added book {} ({})", book.getBookId(), book.getTitle());
         return toSummary(book);
     }
 
     @Transactional(readOnly = true)
-    public PagedBooks listBooks(String title, String author, String category, boolean availableOnly, int page, int size) {
+    public PagedBooks listBooks(String title, String author, UUID courseId, boolean availableOnly, int page, int size) {
         Page<Book> result = bookRepository.search(
                 title == null || title.isBlank() ? "" : title,
                 author == null || author.isBlank() ? "" : author,
-                category == null || category.isBlank() ? "" : category,
+                courseId,
                 availableOnly,
                 PageRequest.of(page, size)
         );
@@ -65,11 +81,16 @@ public class BookService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new NotFoundException("Book not found: " + bookId));
         List<CopyDetail> copies = bookCopyRepository.findByBook_BookId(bookId).stream()
-                .map(c -> new CopyDetail(c.getCopyId(), c.getBarcode(), c.getStatus(), c.getLocation(),
-                        book.getBookId(), book.getTitle(), book.getAuthor()))
+                .map(c -> toCopyDetail(c, book))
                 .toList();
-        return new BookDetail(book.getBookId(), book.getIsbn(), book.getTitle(),
-                book.getAuthor(), book.getCategory(), copies);
+        CourseOfStudy course = book.getCourse();
+        Department department = course != null ? course.getDepartment() : null;
+        return new BookDetail(book.getBookId(), book.getIsbn(), book.getTitle(), book.getAuthor(),
+                course != null ? course.getCourseId() : null,
+                course != null ? course.getName() : null,
+                department != null ? department.getName() : null,
+                department != null ? department.getCollege().getName() : null,
+                copies);
     }
 
     @Transactional
@@ -80,21 +101,28 @@ public class BookService {
         copy.setCopyId(UUID.randomUUID());
         copy.setBook(book);
         copy.setBarcode(request.barcode());
-        copy.setLocation(request.location());
+        copy.setFormat(request.format());
+        copy.setLocation(request.format().equals("HARDCOPY") ? assignShelf(book) : null);
         copy.setStatus("AVAILABLE");
         bookCopyRepository.save(copy);
-        log.info("Added copy {} for book {}", copy.getCopyId(), bookId);
-        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation(),
-                book.getBookId(), book.getTitle(), book.getAuthor());
+        log.info("Added copy {} for book {} (shelf {})", copy.getCopyId(), bookId, copy.getLocation());
+        return toCopyDetail(copy, book);
+    }
+
+    /** Computes the next available shelf for a hardcopy: department's shelf prefix, filled to capacity before moving to the next shelf. */
+    private String assignShelf(Book book) {
+        Department department = book.getCourse() != null ? book.getCourse().getDepartment() : null;
+        String shelfPrefix = department != null ? department.getShelfPrefix() : FALLBACK_SHELF_PREFIX;
+        long existing = bookCopyRepository.countHardcopiesByShelfPrefix(shelfPrefix);
+        long shelfIndex = existing / shelfCapacity + 1;
+        return shelfPrefix + "-" + shelfIndex;
     }
 
     @Transactional(readOnly = true)
     public CopyDetail getCopy(UUID copyId) {
         BookCopy copy = bookCopyRepository.findById(copyId)
                 .orElseThrow(() -> new NotFoundException("Copy not found: " + copyId));
-        Book book = copy.getBook();
-        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation(),
-                book.getBookId(), book.getTitle(), book.getAuthor());
+        return toCopyDetail(copy, copy.getBook());
     }
 
     @Transactional
@@ -104,15 +132,24 @@ public class BookService {
         copy.setStatus(request.status());
         bookCopyRepository.save(copy);
         log.info("Copy {} status updated to {}", copyId, request.status());
-        Book book = copy.getBook();
-        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getLocation(),
+        return toCopyDetail(copy, copy.getBook());
+    }
+
+    private CopyDetail toCopyDetail(BookCopy copy, Book book) {
+        return new CopyDetail(copy.getCopyId(), copy.getBarcode(), copy.getStatus(), copy.getFormat(), copy.getLocation(),
                 book.getBookId(), book.getTitle(), book.getAuthor());
     }
 
     private BookSummary toSummary(Book book) {
         long available = bookCopyRepository.countAvailableByBookId(book.getBookId());
         long total = bookCopyRepository.countTotalByBookId(book.getBookId());
-        return new BookSummary(book.getBookId(), book.getTitle(), book.getAuthor(),
-                book.getIsbn(), book.getCategory(), available, total);
+        CourseOfStudy course = book.getCourse();
+        Department department = course != null ? course.getDepartment() : null;
+        return new BookSummary(book.getBookId(), book.getTitle(), book.getAuthor(), book.getIsbn(),
+                course != null ? course.getCourseId() : null,
+                course != null ? course.getName() : null,
+                department != null ? department.getName() : null,
+                department != null ? department.getCollege().getName() : null,
+                available, total);
     }
 }

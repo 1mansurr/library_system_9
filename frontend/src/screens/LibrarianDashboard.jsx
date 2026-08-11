@@ -18,17 +18,14 @@ export default function LibrarianDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [booksPage, overdueLoans, pendingLoans] = await Promise.all([
+        const [booksPage, overdueLoans] = await Promise.all([
           apiFetch('/api/books?size=1'),
           apiFetch('/api/loans/overdue'),
-          apiFetch('/api/loans/pending'),
         ]);
         const overdueArray = Array.isArray(overdueLoans) ? overdueLoans : [];
-        const pendingArray = Array.isArray(pendingLoans) ? pendingLoans : [];
         setStats({
           titles:  booksPage.total ?? 0,
           overdue: overdueArray.length,
-          pending: pendingArray.length,
         });
 
         const sorted = overdueArray
@@ -59,7 +56,6 @@ export default function LibrarianDashboard() {
 
   const statCards = stats ? [
     { value: stats.titles,  label: 'Titles in catalogue', edge: 'var(--primary)' },
-    { value: stats.pending, label: 'Pending approvals',   edge: 'var(--accent)' },
     { value: stats.overdue, label: 'Overdue',             edge: 'var(--bad-fg)' },
   ] : [];
 
@@ -128,11 +124,10 @@ export default function LibrarianDashboard() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 Import from spreadsheet
               </button>
-              <button onClick={() => navigate('/dashboard/approvals')}
+              <button onClick={() => navigate('/dashboard/reports')}
                 style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#fff', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 11, padding: '14px 16px', font: '600 14px var(--ui)', cursor: 'pointer', textAlign: 'left' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                Review pending approvals
-                {stats?.pending > 0 && <span style={{ marginLeft: 'auto', background: 'var(--accent)', color: 'var(--accent-text)', font: '700 11px var(--ui)', padding: '2px 8px', borderRadius: 10 }}>{stats.pending}</span>}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                View reports
               </button>
               <button onClick={() => navigate('/dashboard/overdue')}
                 style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#fff', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 11, padding: '14px 16px', font: '600 14px var(--ui)', cursor: 'pointer', textAlign: 'left' }}>

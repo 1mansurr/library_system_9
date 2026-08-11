@@ -19,7 +19,7 @@ export default function AppChrome({ children }) {
     ? [
         { to: '/dashboard',             label: 'Dashboard' },
         { to: '/catalog',               label: 'Catalogue' },
-        { to: '/dashboard/approvals',   label: 'Approvals' },
+        { to: '/dashboard/reports',     label: 'Reports' },
         { to: '/dashboard/overdue',     label: 'Overdue' },
         { to: '/dashboard/members',     label: 'Members' },
       ]

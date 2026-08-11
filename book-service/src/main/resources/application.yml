@@ -25,6 +25,9 @@ jwt:
 service:
   token: ${SERVICE_TOKEN}
 
+shelf:
+  capacity: ${SHELF_CAPACITY:40}
+
 logging:
   level:
     com.library: INFO

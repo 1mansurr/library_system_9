@@ -30,11 +30,11 @@ public class BookController {
     public ResponseEntity<PagedBooks> listBooks(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String author,
-            @RequestParam(required = false) String category,
+            @RequestParam(name = "course_id", required = false) UUID courseId,
             @RequestParam(name = "available_only", defaultValue = "false") boolean availableOnly,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(bookService.listBooks(title, author, category, availableOnly, page, size));
+        return ResponseEntity.ok(bookService.listBooks(title, author, courseId, availableOnly, page, size));
     }
 
     @GetMapping("/books/{bookId}")

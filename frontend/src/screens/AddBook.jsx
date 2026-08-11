@@ -1,19 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppChrome from '../components/AppChrome';
 import { useToast } from '../components/Toast';
 import { apiFetch } from '../lib/api';
 
-const CATEGORIES = ['Computer Science', 'Engineering', 'Sciences', 'Business', 'Humanities'];
-
 export default function AddBook() {
   const navigate = useNavigate();
   const toast    = useToast();
-  const [form, setForm] = useState({ isbn: '', title: '', author: '', category: 'Computer Science' });
+  const [form, setForm] = useState({ isbn: '', title: '', author: '' });
+  const [colleges, setColleges]     = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [courses, setCourses]       = useState([]);
+  const [collegeId, setCollegeId]     = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [courseId, setCourseId]       = useState('');
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
   function set(key) { return e => setForm(f => ({ ...f, [key]: e.target.value })); }
+
+  useEffect(() => { apiFetch('/api/colleges').then(setColleges); }, []);
+
+  useEffect(() => {
+    setDepartmentId(''); setCourseId(''); setDepartments([]); setCourses([]);
+    if (collegeId) apiFetch(`/api/colleges/${collegeId}/departments`).then(setDepartments);
+  }, [collegeId]);
+
+  useEffect(() => {
+    setCourseId(''); setCourses([]);
+    if (departmentId) apiFetch(`/api/departments/${departmentId}/courses`).then(setCourses);
+  }, [departmentId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -25,7 +41,7 @@ export default function AddBook() {
     try {
       const book = await apiFetch('/api/books', {
         method: 'POST',
-        body: JSON.stringify({ isbn: form.isbn.trim(), title: form.title.trim(), author: form.author.trim(), category: form.category }),
+        body: JSON.stringify({ isbn: form.isbn.trim(), title: form.title.trim(), author: form.author.trim(), course_id: courseId || undefined }),
       });
       toast('Book saved.', 'Now add at least one copy.');
       navigate(`/dashboard/books/${book.book_id}/copies`);
@@ -76,9 +92,24 @@ export default function AddBook() {
               <input value={form.author} onChange={set('author')} placeholder="Author name" style={inputBase} onFocus={focusOn} onBlur={focusOff} />
             </div>
             <div>
-              <label style={labelStyle}>Category</label>
-              <select value={form.category} onChange={set('category')} style={{ ...inputBase, cursor: 'pointer' }} onFocus={focusOn} onBlur={focusOff}>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <label style={labelStyle}>College</label>
+              <select value={collegeId} onChange={e => setCollegeId(e.target.value)} style={{ ...inputBase, cursor: 'pointer' }} onFocus={focusOn} onBlur={focusOff}>
+                <option value="">Select a college…</option>
+                {colleges.map(c => <option key={c.college_id} value={c.college_id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Department</label>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} disabled={!collegeId} style={{ ...inputBase, cursor: collegeId ? 'pointer' : 'not-allowed' }} onFocus={focusOn} onBlur={focusOff}>
+                <option value="">Select a department…</option>
+                {departments.map(d => <option key={d.department_id} value={d.department_id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Course of study</label>
+              <select value={courseId} onChange={e => setCourseId(e.target.value)} disabled={!departmentId} style={{ ...inputBase, cursor: departmentId ? 'pointer' : 'not-allowed' }} onFocus={focusOn} onBlur={focusOff}>
+                <option value="">Select a course…</option>
+                {courses.map(c => <option key={c.course_id} value={c.course_id}>{c.name}</option>)}
               </select>
             </div>
             {error && <div style={{ background: 'var(--bad-bg)', color: 'var(--bad-fg)', font: '500 13px var(--ui)', padding: '10px 13px', borderRadius: 9 }}>{error}</div>}

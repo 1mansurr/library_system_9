@@ -45,15 +45,20 @@ export default function BookDetail() {
 
   useEffect(() => { loadBook(); }, [id]);
 
-  async function borrow(copyId) {
-    setBorrowing(copyId);
+  async function borrow(format) {
+    const copies = book.copies ?? [];
+    const candidate = copies.find(c => c.status === 'AVAILABLE' && c.format === format);
+    if (!candidate) return;
+
+    setBorrowing(format);
     setReason('');
     try {
-      await apiFetch('/api/loans', {
+      const loan = await apiFetch('/api/loans', {
         method: 'POST',
-        body: JSON.stringify({ copy_id: copyId }),
+        body: JSON.stringify({ copy_id: candidate.copy_id }),
       });
-      toast('Request submitted!', 'The librarian will review and approve your request.');
+      const due = loan?.due_date ? fmt(loan.due_date) : '';
+      toast('Borrowed!', due ? `Due back on ${due}.` : 'Enjoy the book.');
       await loadBook();
     } catch (err) {
       const status = err?.status;
@@ -97,7 +102,9 @@ export default function BookDetail() {
             </svg>
           </div>
           <div style={{ flex: 1, minWidth: 240 }}>
-            <div style={{ font: '400 14px var(--ui)', color: 'var(--muted)', marginBottom: 12 }}>{book.category}</div>
+            <div style={{ font: '400 14px var(--ui)', color: 'var(--muted)', marginBottom: 12 }}>
+              {book.course_name ? `${book.course_name} · ${book.department_name}` : 'Uncategorised'}
+            </div>
             <h1 style={{ font: '600 34px/1.18 var(--serif)', letterSpacing: '-.01em', margin: '0 0 8px' }}>{book.title}</h1>
             <div style={{ font: '400 17px var(--serif)', color: 'var(--muted)', marginBottom: 18 }}>by {book.author}</div>
             <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
@@ -129,31 +136,36 @@ export default function BookDetail() {
           </div>
         )}
 
+        {!isLibrarian && (
+          <div style={{ display: 'flex', gap: 12, marginBottom: 26 }}>
+            {['HARDCOPY', 'SOFTCOPY'].map(format => {
+              const available = copies.some(c => c.status === 'AVAILABLE' && c.format === format);
+              const busy = borrowing === format;
+              const label = format === 'HARDCOPY' ? 'Borrow hardcopy' : 'Borrow softcopy';
+              return (
+                <button key={format} onClick={() => borrow(format)} disabled={!available || busy}
+                  style={{ background: available ? 'var(--primary)' : 'var(--surface-2)', color: available ? '#fff' : 'var(--faint)', border: available ? 'none' : '1px solid var(--border)', borderRadius: 10, padding: '11px 20px', font: '600 14px var(--ui)', cursor: available && !busy ? 'pointer' : 'not-allowed', opacity: busy ? 0.7 : 1 }}>
+                  {busy ? 'Borrowing…' : available ? label : `${label} (unavailable)`}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <h3 style={{ font: '600 18px var(--serif)', color: 'var(--text)', margin: '0 0 14px' }}>Copies</h3>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
           {copies.length === 0 && <div style={{ padding: '40px 22px', color: 'var(--muted)', font: '400 14px var(--serif)' }}>No copies available yet.</div>}
           {copies.map(cp => {
-            const bd      = badge(cp.status);
-            const canBorrow = !isLibrarian && cp.status === 'AVAILABLE';
-            const busy    = borrowing === cp.copy_id;
+            const bd = badge(cp.status);
             return (
               <div key={cp.copy_id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 11px', borderRadius: 7, font: '600 11.5px var(--ui)', letterSpacing: '.02em', background: bd.bg, color: bd.fg, flexShrink: 0, minWidth: 84, justifyContent: 'center' }}>{bd.label}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ font: '500 14px var(--ui)', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{cp.barcode}</div>
-                  <div style={{ font: '400 12.5px var(--ui)', color: 'var(--muted)', marginTop: 2 }}>Shelf {cp.location}</div>
+                  <div style={{ font: '400 12.5px var(--ui)', color: 'var(--muted)', marginTop: 2 }}>
+                    {cp.format === 'SOFTCOPY' ? 'Digital copy' : `Shelf ${cp.location}`}
+                  </div>
                 </div>
-                {!isLibrarian && cp.status === 'AVAILABLE' && (
-                  <button onClick={() => borrow(cp.copy_id)} disabled={busy}
-                    style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', font: '600 13px var(--ui)', cursor: busy ? 'wait' : 'pointer', flexShrink: 0, opacity: busy ? 0.7 : 1 }}>
-                    {busy ? 'Requesting…' : 'Request to Borrow'}
-                  </button>
-                )}
-                {!isLibrarian && cp.status !== 'AVAILABLE' && (
-                  <button disabled style={{ background: 'var(--surface-2)', color: 'var(--faint)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 16px', font: '600 13px var(--ui)', cursor: 'not-allowed', flexShrink: 0 }}>
-                    Unavailable
-                  </button>
-                )}
               </div>
             );
           })}

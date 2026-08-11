@@ -8,6 +8,9 @@ public record BookDetail(
         String isbn,
         String title,
         String author,
-        String category,
+        UUID course_id,
+        String course_name,
+        String department_name,
+        String college_name,
         List<CopyDetail> copies
 ) {}

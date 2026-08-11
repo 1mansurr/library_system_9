@@ -16,4 +16,10 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, UUID> {
 
     @Query("SELECT COUNT(c) FROM BookCopy c WHERE c.book.bookId = :bookId")
     long countTotalByBookId(@Param("bookId") UUID bookId);
+
+    @Query("""
+        SELECT COUNT(c) FROM BookCopy c
+        WHERE c.format = 'HARDCOPY' AND c.book.course.department.shelfPrefix = :shelfPrefix
+        """)
+    long countHardcopiesByShelfPrefix(@Param("shelfPrefix") String shelfPrefix);
 }
