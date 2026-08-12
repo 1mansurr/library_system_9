@@ -9,7 +9,27 @@ const COL_ALIASES = {
   title:    ['title', 'book title', 'book_title'],
   author:   ['author', 'authors', 'author name', 'author_name'],
   copies:   ['copies', 'quantity', 'count', 'qty'],
+  course:   ['course', 'course of study', 'course_name', 'course name'],
 };
+
+let courseIndexPromise = null;
+function loadCourseIndex() {
+  if (!courseIndexPromise) {
+    courseIndexPromise = (async () => {
+      const colleges = await apiFetch('/api/colleges');
+      const deptLists = await Promise.all(
+        colleges.map(c => apiFetch(`/api/colleges/${c.college_id}/departments`))
+      );
+      const courseLists = await Promise.all(
+        deptLists.flat().map(d => apiFetch(`/api/departments/${d.department_id}/courses`))
+      );
+      const index = new Map();
+      courseLists.flat().forEach(c => index.set(c.name.toLowerCase().trim(), c.course_id));
+      return index;
+    })();
+  }
+  return courseIndexPromise;
+}
 
 function parseWorkbook(wb) {
   const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -33,6 +53,7 @@ function parseWorkbook(wb) {
         title:    String(row[colMap.title]  || '').trim(),
         author:   String(row[colMap.author] || '').trim(),
         copies:   Math.max(1, parseInt(colMap.copies ? row[colMap.copies] : 1) || 1),
+        course:   String(colMap.course ? row[colMap.course] : '').trim(),
       }))
       .filter(r => r.isbn && r.title && r.author),
     error: null,
@@ -42,9 +63,9 @@ function parseWorkbook(wb) {
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet([
-    { isbn: '978-0134685991', title: 'Effective Java', author: 'Joshua Bloch', copies: 3 },
-    { isbn: '978-0132350884', title: 'Clean Code', author: 'Robert C. Martin', copies: 2 },
-    { isbn: '978-0201633610', title: 'Design Patterns', author: 'Gang of Four', copies: 1 },
+    { isbn: '978-0134685991', title: 'Effective Java', author: 'Joshua Bloch', copies: 3, course: 'BSc. Computer Science' },
+    { isbn: '978-0132350884', title: 'Clean Code', author: 'Robert C. Martin', copies: 2, course: 'BSc. Computer Science' },
+    { isbn: '978-0201633610', title: 'Design Patterns', author: 'Gang of Four', copies: 1, course: '' },
   ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Books');
   XLSX.writeFile(wb, 'book_catalogue_template.xlsx');
@@ -64,7 +85,7 @@ export default function ImportBooks() {
   function processFile(file) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
         const wb = XLSX.read(e.target.result, { type: 'array' });
         const { rows: parsed, error } = parseWorkbook(wb);
@@ -73,8 +94,13 @@ export default function ImportBooks() {
           setParseErr('No valid rows found. Make sure isbn, title, and author columns are filled.');
           return;
         }
+        const courseIndex = await loadCourseIndex().catch(() => new Map());
+        const resolved = parsed.map(row => ({
+          ...row,
+          course_id: row.course ? courseIndex.get(row.course.toLowerCase().trim()) : undefined,
+        }));
         setParseErr('');
-        setRows(parsed);
+        setRows(resolved);
         setPhase('preview');
       } catch {
         setParseErr('Could not read the file. Make sure it is a valid .xlsx or .xls file.');
@@ -107,9 +133,10 @@ export default function ImportBooks() {
         const book = await apiFetch('/api/books', {
           method: 'POST',
           body: JSON.stringify({
-            isbn:   row.isbn,
-            title:  row.title,
-            author: row.author,
+            isbn:      row.isbn,
+            title:     row.title,
+            author:    row.author,
+            course_id: row.course_id || undefined,
           }),
         });
         await Promise.all(
@@ -192,9 +219,10 @@ export default function ImportBooks() {
                   <span key={c} style={{ font: '600 12px var(--ui)', background: 'var(--primary)', color: '#fff', padding: '3px 10px', borderRadius: 6 }}>{c}</span>
                 ))}
                 <span style={{ font: '600 12px var(--ui)', background: 'var(--surface-2)', color: 'var(--muted)', border: '1px solid var(--border-strong)', padding: '3px 10px', borderRadius: 6 }}>copies (optional)</span>
+                <span style={{ font: '600 12px var(--ui)', background: 'var(--surface-2)', color: 'var(--muted)', border: '1px solid var(--border-strong)', padding: '3px 10px', borderRadius: 6 }}>course (optional)</span>
               </div>
               <div style={{ font: '400 12.5px var(--ui)', color: 'var(--muted)', marginBottom: 16 }}>
-                Imported books aren't assigned to a college/department/course — add them individually via "Add a new book" if you need them to appear in the course catalogue.
+                Add a "course" column with the exact course of study name (e.g. "BSc. Computer Science") to link a book to the catalogue. Names that don't match an existing course still import, just without a course link — you'll see which rows matched in the preview.
               </div>
               <button onClick={downloadTemplate}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'none', border: '1px solid var(--border-strong)', borderRadius: 9, padding: '9px 16px', font: '600 13px var(--ui)', color: 'var(--text)', cursor: 'pointer' }}>
@@ -234,6 +262,7 @@ export default function ImportBooks() {
                       <th style={th}>Author</th>
                       <th style={th}>ISBN</th>
                       <th style={{ ...th, textAlign: 'center' }}>Copies</th>
+                      <th style={th}>Course</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -244,6 +273,9 @@ export default function ImportBooks() {
                         <td style={{ ...td, color: 'var(--muted)' }}>{row.author}</td>
                         <td style={{ ...td, fontVariantNumeric: 'tabular-nums', color: 'var(--muted)' }}>{row.isbn}</td>
                         <td style={{ ...td, textAlign: 'center' }}>{row.copies}</td>
+                        <td style={{ ...td, color: row.course ? (row.course_id ? 'var(--ok-fg)' : 'var(--bad-fg)') : 'var(--faint)' }}>
+                          {row.course ? (row.course_id ? row.course : `${row.course} (not found)`) : '—'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
