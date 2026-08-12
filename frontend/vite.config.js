@@ -14,4 +14,8 @@ export default defineConfig({
       '/api/loans':       'http://localhost:8083',
     },
   },
+  preview: {
+    host: true,
+    allowedHosts: true,
+  },
 })
