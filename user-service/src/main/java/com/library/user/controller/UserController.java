@@ -1,5 +1,6 @@
 package com.library.user.controller;
 
+import com.library.user.dto.ProfileUpdateRequest;
 import com.library.user.dto.StatusUpdateRequest;
 import com.library.user.dto.UserResponse;
 import com.library.user.security.UserPrincipal;
@@ -30,6 +31,12 @@ public class UserController {
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID userId) {
         return ResponseEntity.ok(userService.getUser(userId));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> updateMe(@AuthenticationPrincipal UserPrincipal principal,
+                                                  @Valid @RequestBody ProfileUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateProfile(principal.getUserId(), request));
     }
 
     @PatchMapping("/{userId}/status")

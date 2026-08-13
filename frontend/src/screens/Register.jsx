@@ -25,11 +25,25 @@ export default function Register() {
     if (!form.full_name.trim() || !form.email.trim() || !form.password) {
       setError('Please complete all required fields.'); return;
     }
-    if (form.member_type === 'STUDENT' && !form.matric_no.trim()) {
-      setError('Students must provide an index number.'); return;
+    const email = form.email.trim().toLowerCase();
+    if (form.member_type === 'STUDENT') {
+      if (!form.matric_no.trim()) {
+        setError('Students must provide an index number.'); return;
+      }
+      if (!/^\d{7}$/.test(form.matric_no.trim())) {
+        setError('Index number must be exactly 7 digits.'); return;
+      }
+      if (!email.endsWith('@st.knust.edu.gh')) {
+        setError('Students must register with a KNUST student email (@st.knust.edu.gh).'); return;
+      }
     }
-    if (form.member_type === 'STAFF' && !form.staff_id.trim()) {
-      setError('Staff must provide a staff ID.'); return;
+    if (form.member_type === 'STAFF') {
+      if (!form.staff_id.trim()) {
+        setError('Staff must provide a staff ID.'); return;
+      }
+      if (!email.endsWith('@knust.edu.gh')) {
+        setError('Staff must register with a KNUST staff email (@knust.edu.gh).'); return;
+      }
     }
     if (form.password !== form.confirm) {
       setError('Passwords do not match.'); return;
@@ -84,7 +98,7 @@ export default function Register() {
               <input value={form.full_name} onChange={set('full_name')} placeholder="e.g. Ama Mensah" style={inputBase} onFocus={focusOn} onBlur={focusOff} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
               <div>
                 <label style={labelStyle}>Email</label>
                 <input type="email" value={form.email} onChange={set('email')} placeholder={{ STUDENT: 'you@st.knust.edu.gh', STAFF: 'you@knust.edu.gh', EXTERNAL: 'you@gmail.com' }[form.member_type]} style={inputBase} onFocus={focusOn} onBlur={focusOff} />
@@ -115,7 +129,7 @@ export default function Register() {
             {form.member_type === 'STUDENT' && (
               <div>
                 <label style={labelStyle}>Index Number</label>
-                <input value={form.matric_no} onChange={set('matric_no')} placeholder="e.g. 20512345" style={inputBase} onFocus={focusOn} onBlur={focusOff} />
+                <input value={form.matric_no} onChange={e => setForm(f => ({ ...f, matric_no: e.target.value.replace(/\D/g, '').slice(0, 7) }))} inputMode="numeric" maxLength={7} placeholder="e.g. 2051234" style={inputBase} onFocus={focusOn} onBlur={focusOff} />
               </div>
             )}
             {form.member_type === 'STAFF' && (
@@ -125,7 +139,7 @@ export default function Register() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
               <div>
                 <label style={labelStyle}>Password</label>
                 <input type="password" value={form.password} onChange={set('password')} placeholder="••••••••" style={inputBase} onFocus={focusOn} onBlur={focusOff} />

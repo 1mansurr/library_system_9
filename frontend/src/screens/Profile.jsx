@@ -5,12 +5,39 @@ import { apiFetch } from '../lib/api';
 export default function Profile() {
   const [me, setMe]         = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [phone, setPhone]     = useState('');
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     apiFetch('/api/users/me')
       .then(setMe)
       .finally(() => setLoading(false));
   }, []);
+
+  function startEditing() {
+    setPhone(me.phone || '');
+    setError('');
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await apiFetch('/api/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ phone: phone.trim() || null }),
+      });
+      setMe(updated);
+      setEditing(false);
+    } catch {
+      setError('Could not save. Try again in a moment.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (loading) return <AppChrome><div style={{ padding: 40, color: 'var(--muted)' }}>Loading…</div></AppChrome>;
   if (!me) return null;
@@ -27,7 +54,6 @@ export default function Profile() {
 
   const rows = [
     { k: 'Email',       v: me.email || '—' },
-    { k: 'Phone',       v: me.phone || '—' },
     ...(idRow ? [idRow] : []),
     { k: 'Member type', v: me.member_type ? me.member_type.charAt(0) + me.member_type.slice(1).toLowerCase() : '—' },
   ];
@@ -59,6 +85,36 @@ export default function Profile() {
 
         {/* Details */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '15px 22px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+            <span style={{ font: '500 13.5px var(--ui)', color: 'var(--muted)' }}>Phone</span>
+            {editing ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  value={phone} onChange={e => setPhone(e.target.value)} placeholder="+233 …" autoFocus
+                  style={{ padding: '7px 10px', border: '1px solid var(--border-strong)', borderRadius: 8, font: '500 13.5px var(--ui)', color: 'var(--text)', width: 160 }}
+                />
+                <button onClick={saveEdit} disabled={saving}
+                  style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 12px', font: '600 12.5px var(--ui)', cursor: saving ? 'wait' : 'pointer' }}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button onClick={() => setEditing(false)} disabled={saving}
+                  style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border-strong)', borderRadius: 7, padding: '7px 12px', font: '600 12.5px var(--ui)', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ font: '500 13.5px var(--ui)', color: 'var(--text)', textAlign: 'right' }}>{me.phone || '—'}</span>
+                <button onClick={startEditing}
+                  style={{ background: 'transparent', color: 'var(--primary)', border: 'none', font: '600 12.5px var(--ui)', cursor: 'pointer', padding: 0 }}>
+                  Edit
+                </button>
+              </div>
+            )}
+          </div>
+          {error && (
+            <div style={{ padding: '10px 22px', background: 'var(--bad-bg)', color: 'var(--bad-fg)', font: '500 12.5px var(--ui)' }}>{error}</div>
+          )}
           {rows.map(r => (
             <div key={r.k} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '15px 22px', borderBottom: '1px solid var(--border)' }}>
               <span style={{ font: '500 13.5px var(--ui)', color: 'var(--muted)' }}>{r.k}</span>

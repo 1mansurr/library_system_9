@@ -44,11 +44,25 @@ public class UserService {
         }
 
         String memberType = request.member_type();
-        if ("STUDENT".equals(memberType) && (request.matric_no() == null || request.matric_no().isBlank())) {
-            throw new IllegalArgumentException("matric_no is required for STUDENT members");
+        String email = request.email().toLowerCase();
+        if ("STUDENT".equals(memberType)) {
+            if (request.matric_no() == null || request.matric_no().isBlank()) {
+                throw new IllegalArgumentException("matric_no is required for STUDENT members");
+            }
+            if (!request.matric_no().matches("\\d{7}")) {
+                throw new IllegalArgumentException("Index number must be exactly 7 digits");
+            }
+            if (!email.endsWith("@st.knust.edu.gh")) {
+                throw new IllegalArgumentException("Students must register with a KNUST student email (@st.knust.edu.gh)");
+            }
         }
-        if ("STAFF".equals(memberType) && (request.staff_id() == null || request.staff_id().isBlank())) {
-            throw new IllegalArgumentException("staff_id is required for STAFF members");
+        if ("STAFF".equals(memberType)) {
+            if (request.staff_id() == null || request.staff_id().isBlank()) {
+                throw new IllegalArgumentException("staff_id is required for STAFF members");
+            }
+            if (!email.endsWith("@knust.edu.gh")) {
+                throw new IllegalArgumentException("Staff must register with a KNUST staff email (@knust.edu.gh)");
+            }
         }
 
         String role = switch (memberType) {
@@ -119,6 +133,20 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Profile not found for user: " + userId));
 
         log.info("User {} status updated to {}", userId, request.status());
+        return toUserResponse(user, profile);
+    }
+
+    @Transactional
+    public UserResponse updateProfile(UUID userId, ProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+
+        Profile profile = profileRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new NotFoundException("Profile not found for user: " + userId));
+
+        profile.setPhone(request.phone());
+        profileRepository.save(profile);
+
         return toUserResponse(user, profile);
     }
 
