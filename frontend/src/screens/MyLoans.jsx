@@ -17,6 +17,7 @@ export default function MyLoans() {
   const [tab, setTab]         = useState('active');
   const [loading, setLoading] = useState(true);
   const [returning, setReturning] = useState(null);
+  const [confirming, setConfirming] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,6 +42,7 @@ export default function MyLoans() {
 
   async function handleReturn(loanId, title) {
     setReturning(loanId);
+    setConfirming(null);
     try {
       await apiFetch(`/api/loans/${loanId}/return`, { method: 'POST' });
       toast('Returned.', title + ' is now back in the catalogue.');
@@ -85,6 +87,7 @@ export default function MyLoans() {
               const copy   = copies[ln.copy_id] ?? {};
               const title  = copy.title  ?? ln.copy_id;
               const author = copy.author ?? '';
+              const isHardcopy = copy.format === 'HARDCOPY';
 
               const dueDate = ln.due_date ? new Date(ln.due_date) : null;
               const dleft   = dueDate ? Math.round((dueDate - now) / 86400000) : null;
@@ -104,6 +107,11 @@ export default function MyLoans() {
                   <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ font: '600 18px var(--serif)', color: 'var(--text)', marginBottom: 3 }}>{title}</div>
                     {author && <div style={{ font: '400 13px var(--ui)', color: 'var(--muted)' }}>{author}</div>}
+                    {copy.format && (
+                      <div style={{ font: '500 12px var(--ui)', color: 'var(--muted)', marginTop: 6 }}>
+                        {isHardcopy ? `Hardcopy · Shelf ${copy.location || '—'}` : 'Softcopy · digital access'}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: 18, marginTop: 13, flexWrap: 'wrap' }}>
                       <div>
                         <div style={{ font: '400 12px var(--ui)', color: 'var(--faint)' }}>Borrowed</div>
@@ -117,13 +125,30 @@ export default function MyLoans() {
                       )}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, maxWidth: 220 }}>
                     <div style={{ font: '600 13.5px var(--ui)', color: statusColor }}>{statusText}</div>
                     {overdue && <div style={{ font: '500 12.5px var(--ui)', color: 'var(--bad-fg)', background: 'var(--bad-bg)', padding: '3px 9px', borderRadius: 7 }}>Fine so far {money(fineEst)}</div>}
-                    <button onClick={() => handleReturn(ln.loan_id, title)} disabled={returning === ln.loan_id}
-                      style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 9, padding: '9px 18px', font: '600 13.5px var(--ui)', cursor: returning === ln.loan_id ? 'wait' : 'pointer', opacity: returning === ln.loan_id ? 0.7 : 1 }}>
-                      {returning === ln.loan_id ? 'Returning…' : 'Return'}
-                    </button>
+
+                    {isHardcopy && confirming === ln.loan_id ? (
+                      <>
+                        <div style={{ font: '400 12px var(--ui)', color: 'var(--muted)', textAlign: 'right' }}>Only confirm once you've physically dropped this off at the library desk.</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => setConfirming(null)}
+                            style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border-strong)', borderRadius: 9, padding: '9px 14px', font: '600 13px var(--ui)', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                          <button onClick={() => handleReturn(ln.loan_id, title)} disabled={returning === ln.loan_id}
+                            style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 9, padding: '9px 14px', font: '600 13px var(--ui)', cursor: returning === ln.loan_id ? 'wait' : 'pointer', opacity: returning === ln.loan_id ? 0.7 : 1 }}>
+                            {returning === ln.loan_id ? 'Returning…' : "I've dropped it off"}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button onClick={() => isHardcopy ? setConfirming(ln.loan_id) : handleReturn(ln.loan_id, title)} disabled={returning === ln.loan_id}
+                        style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 9, padding: '9px 18px', font: '600 13.5px var(--ui)', cursor: returning === ln.loan_id ? 'wait' : 'pointer', opacity: returning === ln.loan_id ? 0.7 : 1 }}>
+                        {returning === ln.loan_id ? 'Returning…' : 'Return'}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
