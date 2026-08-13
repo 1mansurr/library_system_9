@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,6 +42,10 @@ public class LoanService {
     private final BigDecimal dailyRate;
     private final int maxActiveLoans;
     private final String serviceToken;
+
+    @Autowired
+    @Lazy
+    private LoanService self;
 
     public LoanService(LoanRepository loanRepository,
                        @Qualifier("userServiceClient") RestClient userServiceClient,
@@ -62,7 +69,7 @@ public class LoanService {
         UUID copyId = request.copy_id();
         String correlationId = UUID.randomUUID().toString();
 
-        UserDto user = fetchUser(userId, bearerToken, correlationId);
+        UserDto user = self.fetchUser(userId, bearerToken, correlationId);
         if (!"ACTIVE".equals(user.status())) {
             throw new ForbiddenException("User account is not active");
         }
@@ -72,12 +79,12 @@ public class LoanService {
             throw new ConflictException("User has reached the maximum active loan limit (" + maxActiveLoans + ")");
         }
 
-        CopyDto copy = fetchCopy(copyId, bearerToken, correlationId);
+        CopyDto copy = self.fetchCopy(copyId, bearerToken, correlationId);
         if (!"AVAILABLE".equals(copy.status())) {
             throw new ConflictException("Copy is not available for borrowing (status: " + copy.status() + ")");
         }
 
-        updateCopyStatus(copyId, "LOANED", correlationId);
+        self.updateCopyStatus(copyId, "LOANED", correlationId);
 
         Loan loan = new Loan();
         loan.setLoanId(UUID.randomUUID());
@@ -118,7 +125,7 @@ public class LoanService {
         loan.setStatus("RETURNED");
         loanRepository.save(loan);
 
-        updateCopyStatus(loan.getCopyId(), "AVAILABLE", correlationId);
+        self.updateCopyStatus(loan.getCopyId(), "AVAILABLE", correlationId);
 
         log.info("[{}] Loan {} returned, fine={}", correlationId, loanId, loan.getFineAmount());
         return toLoanResponse(loan);
@@ -157,7 +164,8 @@ public class LoanService {
         return loanRepository.countBorrowsByCopy();
     }
 
-    private UserDto fetchUser(UUID userId, String bearerToken, String correlationId) {
+    @CircuitBreaker(name = "userService", fallbackMethod = "fetchUserFallback")
+    public UserDto fetchUser(UUID userId, String bearerToken, String correlationId) {
         try {
             return userServiceClient.get()
                     .uri("/api/users/{id}", userId)
@@ -173,7 +181,13 @@ public class LoanService {
         }
     }
 
-    private CopyDto fetchCopy(UUID copyId, String bearerToken, String correlationId) {
+    public UserDto fetchUserFallback(UUID userId, String bearerToken, String correlationId, Throwable t) {
+        log.error("[{}] Fallback triggered for user-service: {}", correlationId, t.getMessage());
+        throw new ServiceUnavailableException("User verification is temporarily unavailable");
+    }
+
+    @CircuitBreaker(name = "bookService", fallbackMethod = "fetchCopyFallback")
+    public CopyDto fetchCopy(UUID copyId, String bearerToken, String correlationId) {
         try {
             return bookServiceClient.get()
                     .uri("/api/copies/{id}", copyId)
@@ -189,7 +203,13 @@ public class LoanService {
         }
     }
 
-    private void updateCopyStatus(UUID copyId, String status, String correlationId) {
+    public CopyDto fetchCopyFallback(UUID copyId, String bearerToken, String correlationId, Throwable t) {
+        log.error("[{}] Fallback triggered for book-service fetchCopy: {}", correlationId, t.getMessage());
+        throw new ServiceUnavailableException("Book catalog is temporarily unavailable");
+    }
+
+    @CircuitBreaker(name = "bookService", fallbackMethod = "updateCopyStatusFallback")
+    public void updateCopyStatus(UUID copyId, String status, String correlationId) {
         try {
             bookServiceClient.patch()
                     .uri("/api/copies/{id}/status", copyId)
@@ -203,6 +223,11 @@ public class LoanService {
             log.error("[{}] Failed to update copy {} status to {}: {}", correlationId, copyId, status, e.getMessage());
             throw new ServiceUnavailableException("book-service unavailable when updating copy status");
         }
+    }
+
+    public void updateCopyStatusFallback(UUID copyId, String status, String correlationId, Throwable t) {
+        log.error("[{}] Fallback triggered for book-service updateCopyStatus: {}", correlationId, t.getMessage());
+        throw new ServiceUnavailableException("Book catalog is temporarily unavailable for updates");
     }
 
     private LoanResponse toLoanResponse(Loan loan) {

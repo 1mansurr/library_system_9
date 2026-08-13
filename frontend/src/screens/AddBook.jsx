@@ -113,10 +113,17 @@ export default function AddBook() {
               </select>
             </div>
             {error && <div style={{ background: 'var(--bad-bg)', color: 'var(--bad-fg)', font: '500 13px var(--ui)', padding: '10px 13px', borderRadius: 9 }}>{error}</div>}
-            <button type="submit" disabled={loading}
-              style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, padding: 13, font: '600 15px var(--ui)', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
-              {loading ? 'Saving…' : 'Save & add copies →'}
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" disabled={loading}
+                onClick={() => { setForm({ isbn: '', title: '', author: '' }); setCollegeId(''); setDepartmentId(''); setCourseId(''); setError(''); }}
+                style={{ flex: 1, background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 13, font: '600 15px var(--ui)', cursor: loading ? 'not-allowed' : 'pointer' }}>
+                Clear
+              </button>
+              <button type="submit" disabled={loading}
+                style={{ flex: 1, background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, padding: 13, font: '600 15px var(--ui)', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                {loading ? 'Saving…' : 'Save & add copies →'}
+              </button>
+            </div>
           </form>
         </div>
       </main>

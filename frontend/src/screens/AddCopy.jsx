@@ -85,14 +85,20 @@ export default function AddCopy() {
               </select>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={handleAddCopy} disabled={adding}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: '#fff', color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 10, padding: 12, font: '600 14px var(--ui)', cursor: adding ? 'wait' : 'pointer', opacity: adding ? 0.7 : 1 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              {adding ? 'Adding…' : 'Add copy'}
-            </button>
+          <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" onClick={() => { setBarcode(''); setFormat('HARDCOPY'); }} disabled={adding}
+                style={{ flex: 1, background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 12, font: '600 14px var(--ui)', cursor: adding ? 'not-allowed' : 'pointer' }}>
+                Clear
+              </button>
+              <button onClick={handleAddCopy} disabled={adding}
+                style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: '#fff', color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 10, padding: 12, font: '600 14px var(--ui)', cursor: adding ? 'wait' : 'pointer', opacity: adding ? 0.7 : 1 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                {adding ? 'Adding…' : 'Add copy'}
+              </button>
+            </div>
             <button onClick={handleDone}
-              style={{ flex: 1, background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, padding: 12, font: '600 14px var(--ui)', cursor: 'pointer' }}>
+              style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, padding: 12, font: '600 14px var(--ui)', cursor: 'pointer' }}>
               Done
             </button>
           </div>

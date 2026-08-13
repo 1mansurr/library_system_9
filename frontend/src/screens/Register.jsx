@@ -138,12 +138,21 @@ export default function Register() {
 
             {error && <div style={{ background: 'var(--bad-bg)', color: 'var(--bad-fg)', font: '500 13px var(--ui)', padding: '10px 13px', borderRadius: 9 }}>{error}</div>}
 
-            <button
-              type="submit" disabled={loading}
-              style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, padding: 13, font: '600 15px var(--ui)', cursor: loading ? 'wait' : 'pointer', marginTop: 4, opacity: loading ? 0.7 : 1 }}
-            >
-              {loading ? 'Creating account…' : 'Create account'}
-            </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button
+                type="button" disabled={loading}
+                onClick={() => { setForm({ full_name: '', email: '', phone: '', member_type: 'STUDENT', matric_no: '', staff_id: '', password: '', confirm: '' }); setError(''); }}
+                style={{ flex: 1, background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 13, font: '600 15px var(--ui)', cursor: loading ? 'not-allowed' : 'pointer' }}
+              >
+                Clear
+              </button>
+              <button
+                type="submit" disabled={loading}
+                style={{ flex: 1, background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, padding: 13, font: '600 15px var(--ui)', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}
+              >
+                {loading ? 'Creating account…' : 'Create account'}
+              </button>
+            </div>
           </form>
         </div>
       </div>
