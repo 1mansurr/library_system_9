@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 
@@ -5,6 +6,7 @@ export default function AppChrome({ children }) {
   const { user, logout, isLibrarian } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function handleLogout() {
     logout();
@@ -36,13 +38,13 @@ export default function AppChrome({ children }) {
   return (
     <>
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(245,242,234,.86)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', height: 62, display: 'flex', alignItems: 'center', gap: 22 }}>
+        <div className="app-header-inner" style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', height: 62, display: 'flex', alignItems: 'center', gap: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexShrink: 0 }}>
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'var(--primary)', color: '#fff', font: '700 15px var(--serif)' }}>K</span>
             <span style={{ font: '600 17px var(--serif)', color: 'var(--text)' }}>KNUST Library</span>
           </div>
 
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+          <nav className="app-nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
             {navItems.map(({ to, label }) => {
               const isActive = to === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(to);
               return (
@@ -54,7 +56,7 @@ export default function AppChrome({ children }) {
           </nav>
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-            <div style={{ textAlign: 'right', lineHeight: 1.25 }}>
+            <div className="app-user-text" style={{ textAlign: 'right', lineHeight: 1.25 }}>
               <div style={{ font: '600 13.5px var(--ui)', color: 'var(--text)' }}>{name}</div>
               <div style={{ font: '400 13px var(--ui)', color: 'var(--muted)' }}>{roleLabel}</div>
             </div>
@@ -62,6 +64,7 @@ export default function AppChrome({ children }) {
             <button
               onClick={handleLogout}
               title="Sign out"
+              className="app-logout-btn"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--muted)', cursor: 'pointer' }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -70,8 +73,34 @@ export default function AppChrome({ children }) {
                 <line x1="21" y1="12" x2="9" y2="12"/>
               </svg>
             </button>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              title="Menu"
+              className="app-menu-toggle"
+              style={{ alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--muted)', cursor: 'pointer' }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="7" x2="20" y2="7"/>
+                <line x1="4" y1="12" x2="20" y2="12"/>
+                <line x1="4" y1="17" x2="20" y2="17"/>
+              </svg>
+            </button>
           </div>
         </div>
+
+        {menuOpen && (
+          <nav className="app-nav-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '10px 16px 16px', borderTop: '1px solid var(--border)' }}>
+            {navItems.map(({ to, label }) => {
+              const isActive = to === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(to);
+              return (
+                <Link key={to} to={to} onClick={() => setMenuOpen(false)} style={{ background: isActive ? 'var(--primary-soft)' : 'transparent', color: isActive ? 'var(--primary)' : 'var(--muted)', border: 'none', borderRadius: 9, padding: '11px 14px', font: `${isActive ? 600 : 500} 14.5px var(--ui)`, cursor: 'pointer', textDecoration: 'none' }}>
+                  {label}
+                </Link>
+              );
+            })}
+            <div style={{ font: '400 13px var(--ui)', color: 'var(--muted)', padding: '9px 14px 0' }}>{name} · {roleLabel}</div>
+          </nav>
+        )}
       </header>
       {children}
     </>
