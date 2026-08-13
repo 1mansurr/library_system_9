@@ -22,7 +22,7 @@ export default function Catalog() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: 0, size: 50, course_id: courseId });
-      if (search)        params.set('title', search);
+      if (search) { params.set('title', search); params.set('author', search); }
       if (availableOnly) params.set('available_only', 'true');
       const data = await apiFetch(`/api/books?${params}`);
       setBooks(data.content ?? []);
