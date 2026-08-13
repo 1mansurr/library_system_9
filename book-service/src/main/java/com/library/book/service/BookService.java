@@ -80,6 +80,32 @@ public class BookService {
         return new PagedBooks(summaries, result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
+    @Transactional
+    public BookSummary updateBook(UUID bookId, BookUpdateRequest request) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new NotFoundException("Book not found: " + bookId));
+
+        if (request.course_id() != null) {
+            CourseOfStudy course = courseOfStudyRepository.findById(request.course_id())
+                    .orElseThrow(() -> new NotFoundException("Course of study not found: " + request.course_id()));
+            book.setCourse(course);
+        } else {
+            book.setCourse(null);
+        }
+        bookRepository.save(book);
+
+        List<BookCopy> hardcopies = bookCopyRepository.findByBook_BookId(bookId).stream()
+                .filter(c -> "HARDCOPY".equals(c.getFormat()))
+                .toList();
+        for (BookCopy copy : hardcopies) {
+            copy.setLocation(assignShelf(book));
+            bookCopyRepository.save(copy);
+        }
+
+        log.info("Updated book {} course to {}", bookId, request.course_id());
+        return toSummary(book);
+    }
+
     @Transactional(readOnly = true)
     public BookDetail getBook(UUID bookId) {
         Book book = bookRepository.findById(bookId)

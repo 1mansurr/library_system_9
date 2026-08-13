@@ -42,6 +42,13 @@ public class BookController {
         return ResponseEntity.ok(bookService.getBook(bookId));
     }
 
+    @PatchMapping("/books/{bookId}")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public ResponseEntity<BookSummary> updateBook(@PathVariable UUID bookId,
+                                                   @RequestBody BookUpdateRequest request) {
+        return ResponseEntity.ok(bookService.updateBook(bookId, request));
+    }
+
     @PostMapping("/books/{bookId}/copies")
     @PreAuthorize("hasRole('LIBRARIAN')")
     public ResponseEntity<CopyDetail> addCopy(@PathVariable UUID bookId,
